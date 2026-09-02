@@ -16,7 +16,7 @@ Many packs are installed themes against the same typed contract.
 | `packages/svelte` | `@kolektiv/keel-svelte` — `Link`, `Form`, `Head`, `page()`, `useForm` |
 | `docs/` | Homepage and guides (Astro 7, Tailwind 4, daisyUI 5, Shiki Catppuccin). pnpm workspace package `@kolektiv/keel-docs`. |
 | `buildSrc/` | Gradle conventions (JVM 17, Maven publish) |
-| `public/` | Static assets for the docs site (`favicon.svg`, `mark.svg`) |
+| `public/` | `logo.svg` / `favicon.svg` product mark, `mark.svg` hull glyph |
 
 ## Commands
 

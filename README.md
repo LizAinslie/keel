@@ -15,7 +15,7 @@ Agents (human or otherwise) should read [AGENTS.md](./AGENTS.md).
 - `lib/` — seed, manifest, page registry, theme resolver (no Ktor)
 - `packages/` — TypeScript router and Svelte bindings (`@kolektiv/keel`, `@kolektiv/keel-svelte`)
 - `docs/` — homepage and documentation (Astro, Tailwind 4, daisyUI 5, Shiki Catppuccin)
-- `public/mark.svg` — the hull mark used in the docs chrome
+- `public/logo.svg` — product mark (also `favicon.svg`); `public/mark.svg` is the hull glyph
 
 ```bash
 ./gradlew :lib:test
