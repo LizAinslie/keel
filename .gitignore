@@ -29,7 +29,7 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 packages/**/dist/
-packages/pnpm-lock.yaml.bak
+pnpm-lock.yaml.bak
 
 # Docs
 docs/dist/
@@ -70,7 +70,6 @@ coverage/
 /vite.config.ts
 /eslint.config.mjs
 /tsconfig.json
-/package.json
 /package-lock.json
 /.prettierrc
 /.project_id

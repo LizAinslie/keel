@@ -1,0 +1,14 @@
+{
+  "name": "@kolektiv/keel-js",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "pnpm --filter @kolektiv/keel-docs dev",
+    "build": "pnpm --filter @kolektiv/keel-docs build",
+    "preview": "pnpm --filter @kolektiv/keel-docs preview",
+    "check": "pnpm --filter @kolektiv/keel-docs check",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --filter \"./packages/**\" test"
+  }
+}

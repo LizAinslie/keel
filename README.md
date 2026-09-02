@@ -13,15 +13,18 @@ Agents (human or otherwise) should read [AGENTS.md](./AGENTS.md).
 
 - `buildSrc/` — Kotlin JVM + Maven publish conventions
 - `lib/` — seed, manifest, page registry, theme resolver (no Ktor)
-- `packages/` — pnpm workspace for the TypeScript router and Svelte bindings
+- `packages/` — TypeScript router and Svelte bindings (`@kolektiv/keel`, `@kolektiv/keel-svelte`)
 - `docs/` — homepage and documentation (Astro, Tailwind 4, daisyUI 5, Shiki Catppuccin)
 - `public/mark.svg` — the hull mark used in the docs chrome
 
 ```bash
 ./gradlew :lib:test
-cd packages && pnpm install && pnpm test
-cd docs && npm ci && npm run dev
+pnpm install
+pnpm test
+pnpm dev
 ```
+
+The pnpm workspace lives at the repository root (`packages/*` and `docs`).
 
 Docs deploy from `.github/workflows/pages.yml` to GitHub Pages (`/keel`). Enable
 **Settings → Pages → Source: GitHub Actions**. Pages on a private repo needs

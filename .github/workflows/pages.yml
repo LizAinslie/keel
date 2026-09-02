@@ -20,13 +20,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Install, build, and upload docs
-        uses: withastro/action@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          path: docs
+          version: 9
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
           node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build docs
+        run: pnpm --filter @kolektiv/keel-docs build
         env:
           GITHUB_PAGES: "1"
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/dist
 
   deploy:
     needs: build

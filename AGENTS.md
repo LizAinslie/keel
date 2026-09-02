@@ -14,7 +14,7 @@ Many packs are installed themes against the same typed contract.
 | `lib/` | Kotlin core (`dev.kolektiv.keel:core`) — seed, manifest, `PageRegistry`, theme chain. No Ktor dependency. |
 | `packages/core` | `@kolektiv/keel` — visits, history, prefetch |
 | `packages/svelte` | `@kolektiv/keel-svelte` — `Link`, `Form`, `Head`, `page()`, `useForm` |
-| `docs/` | Homepage and guides (Astro 7, Tailwind 4, daisyUI 5, Shiki Catppuccin) |
+| `docs/` | Homepage and guides (Astro 7, Tailwind 4, daisyUI 5, Shiki Catppuccin). pnpm workspace package `@kolektiv/keel-docs`. |
 | `buildSrc/` | Gradle conventions (JVM 17, Maven publish) |
 | `public/` | Static assets for the docs site (`favicon.svg`, `mark.svg`) |
 
@@ -22,13 +22,13 @@ Many packs are installed themes against the same typed contract.
 
 ```bash
 ./gradlew :lib:test
-cd packages && pnpm install && pnpm test && pnpm typecheck
-cd docs && npm ci && npm run check && npm run build
-cd docs && npm run dev          # http://127.0.0.1:8080
+pnpm install
+pnpm test && pnpm typecheck
+pnpm --filter @kolektiv/keel-docs build
+pnpm dev                        # http://127.0.0.1:8080
 ```
 
-Java 17, Kotlin 2.1, pnpm 9 for `packages/`. The docs site is a separate npm
-package; do not look for a root Node workspace.
+Java 17, Kotlin 2.1, pnpm 9. The JS workspace root is this repository (`packages/*` and `docs`).
 
 ## Protocol
 
