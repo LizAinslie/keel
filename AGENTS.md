@@ -1,48 +1,61 @@
 # Keel
 
-Host-owned routing for Kotlin MPAs. The **host** owns URLs, page ids, payload
-types, and which frontend pack to mount. Packs implement ids. One pack is an
-app UI. Many packs are installed themes against the same contract.
+This file is for humans and coding agents working in this repository.
+
+Keel is a protocol and libraries for serving MPAs with a frameworked UI from
+Kotlin. The **host** owns URLs, page ids, payload types, and which frontend
+**pack** to mount. Packs implement ids — never paths. One pack is an app UI.
+Many packs are installed themes against the same typed contract.
 
 ## Layout
 
 | Path | What |
 | --- | --- |
-| `lib/` | Kotlin core (`dev.kolektiv.keel:core`) — seed, manifest, `PageRegistry`, theme chain. No Ktor. |
+| `lib/` | Kotlin core (`dev.kolektiv.keel:core`) — seed, manifest, `PageRegistry`, theme chain. No Ktor dependency. |
 | `packages/core` | `@kolektiv/keel` — visits, history, prefetch |
 | `packages/svelte` | `@kolektiv/keel-svelte` — `Link`, `Form`, `Head`, `page()`, `useForm` |
-| `docs/` | Astro 7 + Tailwind 4 + daisyUI 5 + Shiki Catppuccin |
+| `docs/` | Homepage and guides (Astro 7, Tailwind 4, daisyUI 5, Shiki Catppuccin) |
 | `buildSrc/` | Gradle conventions (JVM 17, Maven publish) |
+| `public/` | Static assets for the docs site (`favicon.svg`, `mark.svg`) |
 
 ## Commands
 
 ```bash
 ./gradlew :lib:test
 cd packages && pnpm install && pnpm test && pnpm typecheck
-cd docs && npm install && npm run check && npm run build
-cd docs && npm run dev   # http://0.0.0.0:8080
+cd docs && npm ci && npm run check && npm run build
+cd docs && npm run dev          # http://127.0.0.1:8080
 ```
 
-Java 17. Kotlin 2.1. pnpm 9 for `packages/`. Do not run the sandbox root `package.json` — that is App Builder host, not Keel.
+Java 17, Kotlin 2.1, pnpm 9 for `packages/`. The docs site is a separate npm
+package; do not look for a root Node workspace.
 
-## Design rules
+## Protocol
 
-- Page ids + payload types are the contract. Packs never own URL patterns.
-- Theme choice is host policy (`ChainThemeResolver`). Packs do not read `localStorage` for theme.
-- Seed JSON is the only page payload. Packs do not fetch a second source of truth.
-- Same protocol for one pack (glue a Kotlin UI) and many packs (typed blog themes).
-- Docs examples: Svelte first, Ktor host. React snippets are sketched.
+- Page ids + kotlinx.serialization payload types **are** the contract. Typegen
+  emits TS from the same registry.
+- Theme selection is host policy (`ChainThemeResolver`). Packs do not read a
+  visitor theme from the browser.
+- The seed JSON is the only page payload. Packs must not fetch a second source
+  of truth or own URL patterns.
+- One pack and many packs use the same host API. A single-pack app is a theme
+  chain of one.
+- First adapter is Svelte 5. React snippets in the docs are sketched against
+  the same router.
 
-## Docs UI
+## Docs site
 
-Catppuccin daisyUI themes (`catppuccin-mocha` default). Newsreader display, Source Sans body, IBM Plex Mono code. daisyUI for primitives. Site theme is a picker; code theme defaults to follow-site with a Catppuccin override.
+Catppuccin daisyUI themes (`catppuccin-mocha` default). Display / sans / mono
+are CSS tokens in `docs/src/styles/global.css`. Site chrome uses daisyUI
+primitives. Code samples: Svelte first, Ktor host. Framework and TS/JS
+selectors live on docs pages only.
 
-Homepage: no App Builder branding language, no global framework bar (docs only). Hero code deck overlays the preview on large screens and stacks on small ones.
+On GitHub Pages the site is served under `/keel`. All in-app links must go
+through `path()` in `docs/src/lib/paths.ts` (or `import.meta.env.BASE_URL`).
+Set `GITHUB_PAGES=1` for that build; local `astro dev` stays at `/`.
 
-## Do not commit
+## Contributing
 
-`node_modules/`, `**/build/`, `.gradle/`, `.env`, signing material, App Builder host files (`src/`, `scripts/`, `.grok/`, screenshots). See `.gitignore`.
-
-## Style
-
-Kotlin: existing package layout, kotlinx.serialization, no extra abstraction for one-call sites. TypeScript: ESM, no new deps without need. Do not reformat files you did not change.
+Apache-2.0. Keep page ids stable. Do not commit `node_modules/`, `**/build/`,
+`.gradle/`, `.env`, or signing material. Match the style of the file you are
+in; do not reformat unrelated code or add deps without a need.

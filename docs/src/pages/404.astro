@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro"
 import Navbar from "../components/Navbar.astro"
 import Footer from "../components/Footer.astro"
+import { path } from "../lib/paths"
 ---
 
 <Base title="Not found" description="This path is not a Keel page.">
@@ -13,8 +14,8 @@ import Footer from "../components/Footer.astro"
       The host does not bind a route here. Try the guides, or return to the overview.
     </p>
     <div class="mt-8 flex flex-wrap gap-3">
-      <a class="btn btn-primary min-h-11" href="/docs">Read the docs</a>
-      <a class="btn btn-outline min-h-11" href="/">Overview</a>
+      <a class="btn btn-primary min-h-11" href={path("/docs")}>Read the docs</a>
+      <a class="btn btn-outline min-h-11" href={path("/")}>Overview</a>
     </div>
   </main>
   <Footer />

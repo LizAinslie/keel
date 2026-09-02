@@ -1,6 +1,7 @@
 ---
 import Docs from "../../layouts/Docs.astro"
 import { groupedDocs, allDocs } from "../../lib/docs"
+import { path } from "../../lib/paths"
 
 const entries = await allDocs()
 const groups = groupedDocs(entries)
@@ -25,7 +26,7 @@ const groups = groupedDocs(entries)
                 <li>
                   <a
                     class="flex min-h-11 flex-col justify-center rounded-field px-2 py-2 transition-colors duration-150 hover:bg-base-100 sm:flex-row sm:items-baseline sm:gap-3"
-                    href={`/docs/${page.id}`}
+                    href={path(`/docs/${page.id}`)}
                   >
                     <span class="font-medium">{page.data.title}</span>
                     <span class="text-sm text-base-content/60">{page.data.description}</span>

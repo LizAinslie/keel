@@ -7,13 +7,14 @@ order: 3
 
 import CodeBlock from "../../../components/CodeBlock.astro"
 import CodePair from "../../../components/CodePair.astro"
+import { path } from "../../../lib/paths"
 
 A page has a **stable id**, a **payload type**, and a **host path**. The pack
 never sees the path pattern — only the resolved `path`, `params`, and `data`.
 
 This is the one-pack shape: you own the host and the frontend. The same
 registry is the contract theme authors would implement if you later install
-more packs. See [Page contracts](/docs/core-concepts/contracts).
+more packs. See <a href={path("/docs/core-concepts/contracts")}>Page contracts</a>.
 
 <CodeBlock
   lang="kotlin"

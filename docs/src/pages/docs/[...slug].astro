@@ -2,6 +2,7 @@
 import Docs from "../../layouts/Docs.astro"
 import { allDocs, CATEGORIES } from "../../lib/docs"
 import { render } from "astro:content"
+import { path } from "../../lib/paths"
 
 export async function getStaticPaths() {
   const entries = await allDocs()
@@ -24,9 +25,9 @@ const toc = (headings ?? []).filter((heading) => heading.depth === 2)
 <Docs title={entry.data.title} description={entry.data.description} currentId={entry.id}>
   <div class="breadcrumbs text-sm mb-6">
     <ul>
-      <li><a href="/docs">Docs</a></li>
+      <li><a href={path("/docs")}>Docs</a></li>
       <li>
-        <a href="/docs">{category?.label}</a>
+        <a href={path("/docs")}>{category?.label}</a>
       </li>
       <li>{entry.data.title}</li>
     </ul>
@@ -56,7 +57,7 @@ const toc = (headings ?? []).filter((heading) => heading.depth === 2)
   <nav class="mt-16 grid gap-3 sm:grid-cols-2" aria-label="Docs pagination">
     {
       prev ? (
-        <a class="rounded-box border border-base-300 bg-base-200 px-4 py-4 min-h-14 transition-colors duration-150 hover:bg-base-100" href={`/docs/${prev.id}`}>
+        <a class="rounded-box border border-base-300 bg-base-200 px-4 py-4 min-h-14 transition-colors duration-150 hover:bg-base-100" href={path(`/docs/${prev.id}`)}>
           <p class="font-mono text-xs uppercase tracking-widest text-base-content/60">Previous</p>
           <p class="font-medium mt-1">{prev.data.title}</p>
         </a>
@@ -66,7 +67,7 @@ const toc = (headings ?? []).filter((heading) => heading.depth === 2)
     }
     {
       next && (
-        <a class="rounded-box border border-base-300 bg-base-200 px-4 py-4 min-h-14 sm:text-right transition-colors duration-150 hover:bg-base-100" href={`/docs/${next.id}`}>
+        <a class="rounded-box border border-base-300 bg-base-200 px-4 py-4 min-h-14 sm:text-right transition-colors duration-150 hover:bg-base-100" href={path(`/docs/${next.id}`)}>
           <p class="font-mono text-xs uppercase tracking-widest text-base-content/60">Next</p>
           <p class="font-medium mt-1">{next.data.title}</p>
         </a>

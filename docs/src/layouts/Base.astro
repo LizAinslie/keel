@@ -2,6 +2,7 @@
 import "../styles/global.css"
 import { allDocs } from "../lib/docs"
 import { DEFAULT_CODE_THEME, DEFAULT_SITE_THEME } from "../lib/themes"
+import { path } from "../lib/paths"
 
 interface Props {
   title?: string
@@ -14,7 +15,7 @@ const {
 } = Astro.props
 const pageTitle = title === "Keel" ? "Keel" : `${title} · Keel`
 const docs = await allDocs()
-const previewPaths = ["/", "/docs", ...docs.map((entry) => `/docs/${entry.id}`)]
+const previewPaths = [path("/"), path("/docs"), ...docs.map((entry) => path(`/docs/${entry.id}`))]
 ---
 
 <!doctype html>
@@ -33,9 +34,7 @@ const previewPaths = ["/", "/docs", ...docs.map((entry) => `/docs/${entry.id}`)]
     <meta name="description" content={description} />
     <meta name="theme-color" content="#1e1e2e" />
     <title>{pageTitle}</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/__grok/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/__grok/icon-180.png" />
+    <link rel="icon" type="image/svg+xml" href={path("/favicon.svg")} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

@@ -5,6 +5,8 @@ category: core-concepts
 order: 1
 ---
 
+import { path } from "../../../lib/paths"
+
 URLs are a host concern. A pack is addressed by **page id** (`blog.post`), not
 by `/p/{slug}`. That is what makes a UI swappable: your app pack and a
 third-party theme can both implement `blog.post` while the Ktor route stays
@@ -16,7 +18,7 @@ serializer. Duplicate ids throw. Unknown ids throw. Matching supports
 `{param}` segments.
 
 The registry plus those serializers **is** the page contract. See
-[Page contracts](/docs/core-concepts/contracts).
+<a href={path("/docs/core-concepts/contracts")}>Page contracts</a>.
 
 ## Visit vs document
 

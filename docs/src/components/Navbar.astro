@@ -3,27 +3,27 @@ import LangToggle from "./LangToggle.astro"
 import ThemePicker from "./ThemePicker.astro"
 import CodeThemePicker from "./CodeThemePicker.astro"
 import Mark from "./Mark.astro"
+import { path, isDocsPath } from "../lib/paths"
 
-const path = Astro.url.pathname
-const docsActive = path === "/docs" || path.startsWith("/docs/")
+const docsActive = isDocsPath(Astro.url.pathname)
 ---
 
 <div class="navbar sticky top-0 z-30 border-b-2 border-base-300 bg-base-100/90 backdrop-blur-sm min-h-16 px-3 sm:px-6">
   <div class="navbar-start gap-2 sm:gap-3">
     <slot name="drawer-button" />
-    <a href="/" class="flex items-center gap-3 min-h-11">
+    <a href={path("/")} class="flex items-center gap-3 min-h-11">
       <Mark />
       <span class="font-display text-xl tracking-tight">Keel</span>
     </a>
   </div>
   <div class="navbar-center hidden sm:flex">
     <nav class="flex items-center gap-1 text-sm" aria-label="Primary">
-      <a href="/" class:list={["btn btn-ghost btn-sm", !docsActive && "btn-active"]}>Overview</a>
-      <a href="/docs" class:list={["btn btn-ghost btn-sm", docsActive && "btn-active"]}>Docs</a>
+      <a href={path("/")} class:list={["btn btn-ghost btn-sm", !docsActive && "btn-active"]}>Overview</a>
+      <a href={path("/docs")} class:list={["btn btn-ghost btn-sm", docsActive && "btn-active"]}>Docs</a>
     </nav>
   </div>
   <div class="navbar-end gap-1">
-    <a href="/docs" class:list={["btn btn-ghost btn-sm sm:hidden", docsActive && "btn-active"]}>Docs</a>
+    <a href={path("/docs")} class:list={["btn btn-ghost btn-sm sm:hidden", docsActive && "btn-active"]}>Docs</a>
     {docsActive && (
       <div class="hidden sm:block">
         <LangToggle />

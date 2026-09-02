@@ -1,6 +1,7 @@
 ---
 import { groupedDocs } from "../lib/docs"
 import type { CollectionEntry } from "astro:content"
+import { path } from "../lib/paths"
 
 interface Props {
   entries: CollectionEntry<"docs">[]
@@ -20,7 +21,7 @@ const currentId = Astro.props.currentId
           {group.pages.map((page) => (
             <li>
               <a
-                href={`/docs/${page.id}`}
+                href={path(`/docs/${page.id}`)}
                 class:list={[
                   "min-h-11",
                   page.id === currentId && "menu-active bg-base-100 font-medium",

@@ -1,5 +1,6 @@
 ---
 import Mark from "./Mark.astro"
+import { path } from "../lib/paths"
 ---
 
 <footer class="mt-auto border-t border-base-300 bg-base-200">
@@ -14,9 +15,9 @@ import Mark from "./Mark.astro"
     </aside>
     <nav>
       <h2 class="footer-title opacity-70">Docs</h2>
-      <a class="link link-hover" href="/docs/getting-started">Getting started</a>
-      <a class="link link-hover" href="/docs/core-concepts/routing">Core concepts</a>
-      <a class="link link-hover" href="/docs/advanced/theme-chain">Advanced cases</a>
+      <a class="link link-hover" href={path("/docs/getting-started")}>Getting started</a>
+      <a class="link link-hover" href={path("/docs/core-concepts/routing")}>Core concepts</a>
+      <a class="link link-hover" href={path("/docs/advanced/theme-chain")}>Advanced cases</a>
     </nav>
     <nav>
       <h2 class="footer-title opacity-70">Coordinates</h2>

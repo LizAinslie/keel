@@ -5,6 +5,7 @@ import Footer from "../components/Footer.astro"
 import CodeDeck from "../components/CodeDeck.astro"
 import CodeBlock from "../components/CodeBlock.astro"
 import BrowserPreview from "../components/BrowserPreview.astro"
+import { path } from "../lib/paths"
 
 const ktorSnippet = `@Serializable
 data class HomePage(val greeting: String)
@@ -117,8 +118,8 @@ export function Home() {
             The host does.
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
-            <a class="btn btn-outline min-h-11" href="/docs">Learn more</a>
-            <a class="btn btn-primary min-h-11" href="/docs/getting-started">Get started</a>
+            <a class="btn btn-outline min-h-11" href={path("/docs")}>Learn more</a>
+            <a class="btn btn-primary min-h-11" href={path("/docs/getting-started")}>Get started</a>
           </div>
         </div>
 
@@ -284,8 +285,8 @@ export function Home() {
             contract.
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
-            <a class="btn btn-primary min-h-11" href="/docs/getting-started">Get started</a>
-            <a class="btn btn-outline min-h-11" href="/docs">Read the docs</a>
+            <a class="btn btn-primary min-h-11" href={path("/docs/getting-started")}>Get started</a>
+            <a class="btn btn-outline min-h-11" href={path("/docs")}>Read the docs</a>
           </div>
         </div>
       </div>

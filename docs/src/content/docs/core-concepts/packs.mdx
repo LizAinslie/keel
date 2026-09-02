@@ -5,8 +5,10 @@ category: core-concepts
 order: 4
 ---
 
+import { path } from "../../../lib/paths"
+
 A pack is a zip. Runtime serves the unpacked tree. `manifest.json` maps page
-ids to modules — the pack's implementation of the [host contract](/docs/core-concepts/contracts).
+ids to modules — the pack's implementation of the <a href={path("/docs/core-concepts/contracts")}>host contract</a>.
 A pack may implement a subset; the **host** walks a theme chain and writes the
 chosen pack into the seed.
 
