@@ -31,7 +31,8 @@ pnpm-debug.log*
 packages/**/dist/
 pnpm-lock.yaml.bak
 
-# Docs
+# Docs / site output
+/dist/
 docs/dist/
 docs/.astro/
 docs/.vercel/

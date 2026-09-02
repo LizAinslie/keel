@@ -21,6 +21,7 @@ export default defineConfig({
   site: githubPages ? "https://lizainslie.github.io" : "http://localhost:8080",
   base: siteBase,
   output: "static",
+  outDir: "../dist",
   publicDir: "../public",
   srcDir: "./src",
   integrations: [mdx()],

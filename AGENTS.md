@@ -45,14 +45,16 @@ Java 17, Kotlin 2.1, pnpm 9. The JS workspace root is this repository (`packages
 
 ## Docs site
 
-Catppuccin daisyUI themes (`catppuccin-mocha` default). Display / sans / mono
-are CSS tokens in `docs/src/styles/global.css`. Site chrome uses daisyUI
+Catppuccin daisyUI themes (`catppuccin-mocha` default). Type: Source Serif 4
+(display), Source Sans 3 (body / UI), Iosevka (code) in
+`docs/src/styles/global.css`. Site chrome uses daisyUI
 primitives. Code samples: Svelte first, Ktor host. Framework and TS/JS
 selectors live on docs pages only.
 
 On GitHub Pages the site is served under `/keel`. All in-app links must go
 through `path()` in `docs/src/lib/paths.ts` (or `import.meta.env.BASE_URL`).
-Set `GITHUB_PAGES=1` for that build; local `astro dev` stays at `/`.
+Set `GITHUB_PAGES=1` for that build; local `astro dev` stays at `/`. Astro
+emits to `/dist` at the repo root.
 
 ## Contributing
 

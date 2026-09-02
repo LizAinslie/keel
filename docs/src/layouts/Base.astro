@@ -16,6 +16,8 @@ const {
 const pageTitle = title === "Keel" ? "Keel" : `${title} · Keel`
 const docs = await allDocs()
 const previewPaths = [path("/"), path("/docs"), ...docs.map((entry) => path(`/docs/${entry.id}`))]
+const ogImage = new URL(path("/og.jpg").replace(/^\//, ""), Astro.site ?? "http://localhost:8080/").href
+const pageUrl = new URL(path("/").replace(/^\//, ""), Astro.site ?? "http://localhost:8080/").href
 ---
 
 <!doctype html>
@@ -34,13 +36,22 @@ const previewPaths = [path("/"), path("/docs"), ...docs.map((entry) => path(`/do
     <meta name="description" content={description} />
     <meta name="theme-color" content="#1e1e2e" />
     <title>{pageTitle}</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:url" content={pageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
     <link rel="icon" type="image/svg+xml" href={path("/favicon.svg")} />
     <link rel="apple-touch-icon" href={path("/logo.svg")} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400&display=swap"
     />
     <script is:inline>
       (() => {

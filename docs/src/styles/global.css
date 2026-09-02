@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "@fontsource/iosevka/latin-400.css";
+@import "@fontsource/iosevka/latin-500.css";
 @plugin "daisyui" {
   themes: catppuccin-mocha --default, catppuccin-macchiato, catppuccin-frappe, catppuccin-latte;
   logs: false;
@@ -152,9 +154,9 @@
 }
 
 @theme {
-  --font-display: "Newsreader", "Iowan Old Style", Palatino, serif;
+  --font-display: "Source Serif 4", "Iowan Old Style", Palatino, "Times New Roman", serif;
   --font-sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: "Iosevka", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --color-swatch-latte: #eff1f5;
   --color-swatch-frappe: #303446;
   --color-swatch-macchiato: #24273a;
@@ -176,7 +178,7 @@ h2,
 h3,
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   text-wrap: balance;
   line-height: 1.15;
 }
@@ -187,7 +189,7 @@ p {
 
 .prose-keel :where(h2, h3) {
   font-family: var(--font-display);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   margin-top: 2.25rem;
   margin-bottom: 0.75rem;
 }
@@ -350,10 +352,7 @@ html[data-backend="ktor"] [data-bw]:not([data-bw~="ktor"]):not([data-bw~="all"])
 
 @media (min-width: 1024px) {
   .keel-deck-overlay {
-    box-shadow:
-      0 24px 40px -12px oklch(0 0 0 / 0.7),
-      0 10px 16px -8px oklch(0 0 0 / 0.5),
-      0 0 0 1px oklch(0 0 0 / 0.35);
+    box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--color-base-content) 22%, transparent);
   }
 }
 
