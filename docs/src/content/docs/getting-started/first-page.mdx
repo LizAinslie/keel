@@ -1,0 +1,85 @@
+---
+title: First page
+description: Register a page on the host, implement it in a pack.
+category: getting-started
+order: 3
+---
+
+import CodeBlock from "../../../components/CodeBlock.astro"
+import CodePair from "../../../components/CodePair.astro"
+
+A page has a **stable id**, a **payload type**, and a **host path**. The pack
+never sees the path pattern — only the resolved `path`, `params`, and `data`.
+
+This is the one-pack shape: you own the host and the frontend. The same
+registry is the contract theme authors would implement if you later install
+more packs. See [Page contracts](/docs/core-concepts/contracts).
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="PageRegistry"
+  code={`@Serializable
+data class HomePage(val greeting: String)
+
+pages {
+  page<HomePage>("home", "/") { HomePage("hello") }
+}`}
+/>
+
+The registry is the source of truth for ids and payload serializers. Ktor (or
+any host) walks it to bind routes. Typegen walks it to emit `.d.ts`.
+
+<CodePair
+  fw="svelte"
+  title="pages/home.svelte"
+  ts={`<script lang="ts">
+  import { page, Head } from "@kolektiv/keel-svelte"
+  import type { HomePage } from "@app/page-types"
+  const ctx = page<HomePage>()
+</script>
+
+<Head title={ctx.data.greeting} />
+<h1>{ctx.data.greeting}</h1>`}
+  js={`<script>
+  import { page, Head } from "@kolektiv/keel-svelte"
+  const ctx = page()
+</script>
+
+<Head title={ctx.data.greeting} />
+<h1>{ctx.data.greeting}</h1>`}
+/>
+
+<CodePair
+  fw="react"
+  title="pages/home.tsx"
+  ts={`import { Head, usePage } from "@kolektiv/keel-react"
+import type { HomePage } from "@app/page-types"
+
+export function Home() {
+  const { data } = usePage<HomePage>()
+  return (
+    <>
+      <Head title={data.greeting} />
+      <h1>{data.greeting}</h1>
+    </>
+  )
+}`}
+  js={`import { Head, usePage } from "@kolektiv/keel-react"
+
+export function Home() {
+  const { data } = usePage()
+  return (
+    <>
+      <Head title={data.greeting} />
+      <h1>{data.greeting}</h1>
+    </>
+  )
+}`}
+/>
+
+Bootstrap reads `#__keel_seed`, imports `entry`, and calls `mount(host, ctx)`.
+The adapter generates that wrapper so you write ordinary components.
+
+Use the TS/JS toggle on the block itself to pin a snippet, or the global
+language control in the bar to switch every example that has not been pinned.

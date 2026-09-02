@@ -1,0 +1,13 @@
+---
+import { Code } from "astro:components"
+import { SHIKI_THEMES } from "../lib/themes"
+
+interface Props {
+  code: string
+  lang?: "ts" | "js" | "kotlin" | "json" | "bash"
+}
+
+const { code, lang = "ts" } = Astro.props
+---
+
+<Code code={code} lang={lang} themes={SHIKI_THEMES} defaultColor={false} wrap />

@@ -1,0 +1,21 @@
+---
+import Base from "../layouts/Base.astro"
+import Navbar from "../components/Navbar.astro"
+import Footer from "../components/Footer.astro"
+---
+
+<Base title="Not found" description="This path is not a Keel page.">
+  <Navbar />
+  <main id="main" class="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-20 sm:px-6">
+    <p class="font-mono text-xs uppercase tracking-[0.18em] text-base-content/60">404</p>
+    <h1 class="mt-3 font-display text-4xl sm:text-5xl">This path has no page id.</h1>
+    <p class="mt-4 text-lg text-base-content/70">
+      The host does not bind a route here. Try the guides, or return to the overview.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a class="btn btn-primary min-h-11" href="/docs">Read the docs</a>
+      <a class="btn btn-outline min-h-11" href="/">Overview</a>
+    </div>
+  </main>
+  <Footer />
+</Base>

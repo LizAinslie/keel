@@ -1,0 +1,74 @@
+---
+title: Install
+description: Gradle core, pnpm router, Svelte rig.
+category: getting-started
+order: 2
+---
+
+import CodeBlock from "../../../components/CodeBlock.astro"
+import CodePair from "../../../components/CodePair.astro"
+import Callout from "../../../components/Callout.astro"
+
+## Maven — host
+
+The core artifact has no Ktor dependency. A later `ktor` module will bind routes.
+Publish locally from this repo with the included conventions plugin.
+
+<CodeBlock lang="kotlin" bw="ktor" title="build.gradle.kts" code={`plugins {
+    id("keel.published-library")
+}
+
+dependencies {
+    implementation("dev.kolektiv.keel:core:0.1.0-SNAPSHOT")
+}`} />
+
+Coordinates: `dev.kolektiv.keel:core`. Protocol format `keel/1`. Seed version `1`.
+You ship at least one pack — your UI, or the default theme the host falls back to.
+
+## npm — router and rig
+
+The TypeScript workspace lives in `packages/` and is managed with pnpm. The
+router is framework-agnostic. Each rig is a thin binding.
+
+<CodePair
+  title="package.json — Svelte"
+  fw="svelte"
+  ts={`{
+  "dependencies": {
+    "@kolektiv/keel": "workspace:*",
+    "@kolektiv/keel-svelte": "workspace:*",
+    "svelte": "^5.16.0"
+  }
+}`}
+  js={`{
+  "dependencies": {
+    "@kolektiv/keel": "workspace:*",
+    "@kolektiv/keel-svelte": "workspace:*",
+    "svelte": "^5.16.0"
+  }
+}`}
+/>
+
+<CodePair
+  title="package.json — React"
+  fw="react"
+  ts={`{
+  "dependencies": {
+    "@kolektiv/keel": "workspace:*",
+    "@kolektiv/keel-react": "workspace:*",
+    "react": "^19.0.0"
+  }
+}`}
+  js={`{
+  "dependencies": {
+    "@kolektiv/keel": "workspace:*",
+    "@kolektiv/keel-react": "workspace:*",
+    "react": "^19.0.0"
+  }
+}`}
+/>
+
+<Callout title="React is sketched">
+  Switch the frontend selector to React to see upcoming snippets. The package is
+  not published yet — it will implement the same `mount(host, ctx)` contract.
+</Callout>

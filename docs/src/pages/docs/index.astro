@@ -1,0 +1,41 @@
+---
+import Docs from "../../layouts/Docs.astro"
+import { groupedDocs, allDocs } from "../../lib/docs"
+
+const entries = await allDocs()
+const groups = groupedDocs(entries)
+---
+
+<Docs title="Documentation" description="Keel documentation — getting started, core concepts, and advanced cases.">
+  <p class="font-mono text-xs uppercase tracking-[0.18em] text-base-content/60">Documentation</p>
+  <h1 class="mt-3 font-display text-4xl sm:text-5xl">Guides</h1>
+  <p class="mt-4 text-lg text-base-content/70">
+    Host-owned routing, a typed page contract, and packs the server selects.
+    One pack is your UI. Many packs are installed themes. Selectors above
+    only change how the docs render snippets — not how a host picks a bundle.
+  </p>
+  <div class="mt-10 grid gap-5">
+    {
+      groups.map((group) => (
+        <section class="card border border-base-300 bg-base-200">
+          <div class="card-body gap-4">
+            <h2 class="card-title font-display text-2xl">{group.label}</h2>
+            <ul class="grid gap-1">
+              {group.pages.map((page) => (
+                <li>
+                  <a
+                    class="flex min-h-11 flex-col justify-center rounded-field px-2 py-2 transition-colors duration-150 hover:bg-base-100 sm:flex-row sm:items-baseline sm:gap-3"
+                    href={`/docs/${page.id}`}
+                  >
+                    <span class="font-medium">{page.data.title}</span>
+                    <span class="text-sm text-base-content/60">{page.data.description}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ))
+    }
+  </div>
+</Docs>

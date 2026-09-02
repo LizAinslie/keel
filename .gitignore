@@ -1,0 +1,76 @@
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Editors
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.fleet/
+*.code-workspace
+
+# Gradle
+.gradle/
+.kotlin/
+**/build/
+out/
+kotlin-js-store/
+local.properties
+*.hprof
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+packages/**/dist/
+packages/pnpm-lock.yaml.bak
+
+# Docs
+docs/dist/
+docs/.astro/
+docs/.vercel/
+
+# Env / secrets — never commit credentials or signing material
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+signing.properties
+
+# Logs / coverage
+*.log
+logs/
+coverage/
+.nyc_output/
+*.lcov
+
+# App Builder sandbox host — not part of Keel
+/AGENTS.md
+/AGENTS.project.md
+/.grok/
+/artifacts/
+/attachments/
+/screenshots/
+/startup.sh
+/src/
+/server/
+/scripts/
+/migrations/
+/public/__grok/
+/.node_modules.lock
+/.tanstack/
+/.vercel/
+/vite.config.ts
+/eslint.config.mjs
+/tsconfig.json
+/package.json
+/package-lock.json
+/.prettierrc

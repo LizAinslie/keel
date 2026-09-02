@@ -1,0 +1,37 @@
+---
+import { groupedDocs } from "../lib/docs"
+import type { CollectionEntry } from "astro:content"
+
+interface Props {
+  entries: CollectionEntry<"docs">[]
+  currentId?: string
+}
+
+const groups = groupedDocs(Astro.props.entries)
+const currentId = Astro.props.currentId
+---
+
+<ul class="menu w-full px-3 py-4 text-sm">
+  {
+    groups.map((group) => (
+      <li class="mt-2 first:mt-0">
+        <h2 class="menu-title px-3">{group.label}</h2>
+        <ul>
+          {group.pages.map((page) => (
+            <li>
+              <a
+                href={`/docs/${page.id}`}
+                class:list={[
+                  "min-h-11",
+                  page.id === currentId && "menu-active bg-base-100 font-medium",
+                ]}
+              >
+                {page.data.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </li>
+    ))
+  }
+</ul>

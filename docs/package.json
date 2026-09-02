@@ -1,0 +1,21 @@
+{
+  "name": "@kolektiv/keel-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --host 0.0.0.0 --port 8080",
+    "build": "astro build",
+    "preview": "astro preview --host 127.0.0.1 --port 8081",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/mdx": "^8.0.0",
+    "@astrojs/vercel": "^11.0.9",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.2.10",
+    "daisyui": "^5.7.27",
+    "tailwindcss": "^4.3.3",
+    "typescript": "5.9.2"
+  }
+}

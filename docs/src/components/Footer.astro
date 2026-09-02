@@ -1,0 +1,28 @@
+---
+import Mark from "./Mark.astro"
+---
+
+<footer class="mt-auto border-t border-base-300 bg-base-200">
+  <div class="footer sm:footer-horizontal max-w-6xl mx-auto px-4 sm:px-6 py-10 text-sm text-base-content/70">
+    <aside class="max-w-sm">
+      <div class="flex items-center gap-3 text-base-content">
+        <Mark />
+        <span class="font-display text-xl tracking-tight">Keel</span>
+      </div>
+      <p class="mt-3 font-mono text-xs tracking-wide">dev.kolektiv.keel:core · 0.1.0-SNAPSHOT</p>
+      <p>The host owns the contract. Packs implement the pages.</p>
+    </aside>
+    <nav>
+      <h2 class="footer-title opacity-70">Docs</h2>
+      <a class="link link-hover" href="/docs/getting-started">Getting started</a>
+      <a class="link link-hover" href="/docs/core-concepts/routing">Core concepts</a>
+      <a class="link link-hover" href="/docs/advanced/theme-chain">Advanced cases</a>
+    </nav>
+    <nav>
+      <h2 class="footer-title opacity-70">Coordinates</h2>
+      <span class="font-mono text-xs">@kolektiv/keel</span>
+      <span class="font-mono text-xs">@kolektiv/keel-svelte</span>
+      <span class="font-mono text-xs">keel/1</span>
+    </nav>
+  </div>
+</footer>

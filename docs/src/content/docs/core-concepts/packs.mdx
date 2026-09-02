@@ -1,0 +1,44 @@
+---
+title: Packs and manifests
+description: A versioned zip of modules keyed by page id.
+category: core-concepts
+order: 4
+---
+
+A pack is a zip. Runtime serves the unpacked tree. `manifest.json` maps page
+ids to modules — the pack's implementation of the [host contract](/docs/core-concepts/contracts).
+A pack may implement a subset; the **host** walks a theme chain and writes the
+chosen pack into the seed.
+
+An app with one frontend is a pack that implements every id. A blog theme is
+a pack that implements `blog.home`, `blog.list`, `blog.post` (or a subset)
+against those payload types. Same zip format.
+
+```json
+{
+  "format": "keel/1",
+  "id": "midnight",
+  "version": "1.2.0",
+  "framework": "svelte",
+  "host": "#__keel_root",
+  "pages": {
+    "blog.post": {
+      "module": "pages/blog.post.js",
+      "css": ["assets/blog.post.css"]
+    }
+  }
+}
+```
+
+`framework` tells the host which adapter to expect. It is not a second
+router. A Svelte pack and a React pack can implement the same page ids; the
+host loads the matching entry module.
+
+## Layouts and notFound
+
+The manifest may declare `layouts` (named layout modules) and `notFound`. A page
+entry may name a layout. Missing from every pack in the chain throws
+`MissingPageInThemeException`; the host should map that to the default pack's
+`notFound` module.
+
+Pages are keyed by **stable ids**, never URL patterns. Paths live on the host.

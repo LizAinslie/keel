@@ -1,0 +1,55 @@
+---
+title: Seed and headers
+description: The JSON document that bootstrap and visits share.
+category: core-concepts
+order: 3
+---
+
+The seed is the contract at runtime. Themes do not parse it; bootstrap does,
+then passes a typed context into `mount()`. Document requests place it in
+`#__keel_seed`. Visits return it as JSON from `/__keel/navigate`.
+
+```json
+{
+  "v": 1,
+  "page": "blog.post",
+  "path": "/p/hello",
+  "params": { "slug": "hello" },
+  "data": { "title": "Hello" },
+  "errors": {},
+  "theme": { "id": "midnight", "version": "1.2.0" },
+  "entry": "/themes/midnight/pages/blog.post.js",
+  "css": ["/themes/midnight/assets/blog.post.css"],
+  "host": "#__keel_root"
+}
+```
+
+`theme` and `entry` are whatever the host selected — your only app pack, or
+an installed theme. Optional fields: `shared` (cross-page bag), `layout`,
+`redirect`. `path` must be absolute. `page` and `entry` must be non-blank.
+`v` defaults to `1`.
+
+## Headers
+
+| Header | Purpose |
+| --- | --- |
+| `X-Keel-Visit` | JSON seed instead of the HTML shell |
+| `X-Keel-Only` | Partial reload: keep these data keys |
+| `X-Keel-Except` | Partial reload: drop these data keys |
+| `X-Keel-Theme` | Request a pack override |
+| `X-Keel-Version` | Client protocol version |
+| `X-Keel-Partial` | Hint that this visit is a partial |
+
+## Page module
+
+Every pack page exports the same three functions. Framework adapters generate
+this wrapper so authors write ordinary files.
+
+```ts
+export function mount(host: Element, ctx: PageContext<T>): void
+export function unmount(): void
+export function update?(ctx: PageContext<T>): void  // same page, preserveState
+```
+
+`PageContext` carries `page`, `path`, `params`, `data`, `errors`, `theme`,
+`shared`, and `navigate`.

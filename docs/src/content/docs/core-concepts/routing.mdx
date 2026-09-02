@@ -1,0 +1,42 @@
+---
+title: Host-owned routing
+description: Page ids live on the server. Packs implement ids, never paths.
+category: core-concepts
+order: 1
+---
+
+URLs are a host concern. A pack is addressed by **page id** (`blog.post`), not
+by `/p/{slug}`. That is what makes a UI swappable: your app pack and a
+third-party theme can both implement `blog.post` while the Ktor route stays
+put. It is also what makes a one-pack app simple — the registry is the only
+router.
+
+`PageRegistry` stores the id, a Ktor-style pattern, and the payload
+serializer. Duplicate ids throw. Unknown ids throw. Matching supports
+`{param}` segments.
+
+The registry plus those serializers **is** the page contract. See
+[Page contracts](/docs/core-concepts/contracts).
+
+## Visit vs document
+
+A first load is a document request. The host returns the HTML shell, the seed
+node (`#__keel_seed`), and a module URL. Client navigation is a **visit**:
+`X-Keel-Visit: true` against `/__keel/navigate?to=…`. The response is the same
+seed JSON.
+
+Non-GET visits send form or JSON bodies. `422` is still a seed — with `errors`.
+
+## History
+
+Successful visits `pushState` the seed. Back/forward re-applies the stored seed
+without a network round-trip unless the entry module changed.
+
+`replace` swaps the current history entry (login, pack switch). `preserveState`
+on the same page id calls `update()` instead of remounting.
+
+## Why packs must not own paths
+
+If a theme hard-codes `/p/{slug}`, you cannot swap it for a pack that uses the
+same id on a different host path. The id is the contract. The path is
+decoration the host is free to restyle — or version.

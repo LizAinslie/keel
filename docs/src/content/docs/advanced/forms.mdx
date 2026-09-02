@@ -1,0 +1,66 @@
+---
+title: Forms and 422s
+description: Progressive enhancement over router.visit.
+category: advanced
+order: 3
+---
+
+import CodePair from "../../../components/CodePair.astro"
+
+Forms are visits. `Form` progressive-enhances a real `<form>`. `useForm` holds
+field state, errors, processing, and progress. A 422 is still a seed — with
+`errors` — so the page can stay put.
+
+<CodePair
+  fw="svelte"
+  title="useForm"
+  ts={`const comment = useForm({ body: "" })
+
+comment.post("/p/hello/comments", {
+  preserveScroll: true,
+  onSuccess: () => comment.reset(),
+})`}
+  js={`const comment = useForm({ body: "" })
+
+comment.post("/p/hello/comments", {
+  preserveScroll: true,
+  onSuccess: () => comment.reset(),
+})`}
+/>
+
+<CodePair
+  fw="svelte"
+  title="Form"
+  ts={`<Form action="/p/hello/comments" method="post" resetOnSuccess>
+  <textarea name="body"></textarea>
+</Form>`}
+  js={`<Form action="/p/hello/comments" method="post" resetOnSuccess>
+  <textarea name="body"></textarea>
+</Form>`}
+/>
+
+<CodePair
+  fw="react"
+  title="useForm"
+  ts={`const comment = useForm({ body: "" })
+
+function onSubmit(event: FormEvent) {
+  event.preventDefault()
+  void comment.post("/p/hello/comments", {
+    preserveScroll: true,
+    onSuccess: () => comment.reset(),
+  })
+}`}
+  js={`const comment = useForm({ body: "" })
+
+function onSubmit(event) {
+  event.preventDefault()
+  void comment.post("/p/hello/comments", {
+    preserveScroll: true,
+    onSuccess: () => comment.reset(),
+  })
+}`}
+/>
+
+`preserveScroll: "errors"` restores scroll only when the seed has errors.
+`preserveState` keeps the module mounted so field focus survives the round-trip.

@@ -1,0 +1,65 @@
+---
+title: What is Keel
+description: Host-owned routing. Packs implement page ids. The server picks the bundle.
+category: getting-started
+order: 1
+---
+
+import Callout from "../../../components/Callout.astro"
+
+Keel is a protocol and a small set of libraries for serving MPAs with a
+frameworked UI from Kotlin. The **host** owns URLs, page ids, payload types,
+and **which frontend bundle to mount**. A **pack** is a versioned frontend
+that implements those ids.
+
+You always do the same two things: declare a contract on the host, then mount
+packs that implement it.
+
+**Glue an app.** Register pages, write one Svelte (or React) frontend, ship
+that pack. Keel is the router between Ktor and the UI — visits, seeds, forms —
+without a client-side router owning the URL.
+
+**Install themes.** Keep the same registry. Publish the page ids and
+serializers as the contract. Authors pick from packs installed on the app;
+each pack is typed for that data and provides the ids the host expects.
+Visitors never store a theme. The host does.
+
+The first host is Ktor. The first adapter is Svelte 5. React is next — same
+router, different bindings.
+
+## The split
+
+- **Keel** — product, CLI, Maven group `dev.kolektiv.keel`
+- **Pack** — a versioned frontend (zip + manifest) keyed by page id, not path
+- **Adapter** — `mount` / `unmount` / `update` for a framework (Svelte, later React)
+
+## What the host does
+
+- Declares `page<T>(id, path)` — id + payload type + path
+- Resolves which pack implements that id (one pack, or a chain of installed themes)
+- Renders a shell with `#__keel_seed` or answers `/__keel/navigate` with the same JSON
+
+## What a pack must not do
+
+- Own URL patterns
+- Fetch its own page payload as a second source of truth
+- Parse the seed outside bootstrap
+- Read a visitor theme preference from the browser
+
+```json
+{
+  "v": 1,
+  "page": "home",
+  "path": "/",
+  "data": { "greeting": "Hello" },
+  "theme": { "id": "harbor", "version": "1.0.0" },
+  "entry": "/themes/harbor/pages/home.js",
+  "host": "#__keel_root"
+}
+```
+
+<Callout title="One pack or many">
+  A single-pack app still runs `ChainThemeResolver` — the chain has one
+  entry. Adding a second pack does not change the host API. It changes
+  which bundle the resolver writes into the seed.
+</Callout>

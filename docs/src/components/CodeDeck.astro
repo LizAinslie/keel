@@ -1,0 +1,129 @@
+---
+import ShikiCode from "./ShikiCode.astro"
+import LangToggle from "./LangToggle.astro"
+import CodeThemePicker from "./CodeThemePicker.astro"
+
+interface FileSnippet {
+  title: string
+  lang?: "ts" | "js" | "kotlin" | "json" | "bash"
+  code?: string
+  ts?: string
+  js?: string
+}
+
+interface FrameworkGroup {
+  id: string
+  label: string
+  files: FileSnippet[]
+}
+
+interface Props {
+  frameworks: FrameworkGroup[]
+  overlay?: boolean
+}
+
+const { frameworks, overlay = false } = Astro.props
+const initial = frameworks[0]?.id ?? "svelte"
+---
+
+<div
+  class:list={[
+    "keel-deck overflow-hidden rounded-box border-2 border-base-300 bg-base-100",
+    overlay && "keel-deck-overlay",
+  ]}
+  data-framework={initial}
+  data-file="0"
+>
+  {
+    !overlay && (
+      <div class="flex items-center gap-2 border-b-2 border-base-300 bg-base-200 px-3 py-2">
+        {frameworks.length > 1 && (
+          <select class="select select-xs min-h-8" data-local-framework aria-label="Frontend framework">
+            {frameworks.map((group) => (
+              <option value={group.id}>{group.label}</option>
+            ))}
+          </select>
+        )}
+        <div class="ml-auto flex items-center gap-1">
+          <CodeThemePicker id="keel-code-theme-deck" compact />
+          <button type="button" class="btn btn-ghost btn-xs min-h-8" data-copy>
+            Copy
+          </button>
+        </div>
+      </div>
+    )
+  }
+  {
+    frameworks.map((group) => (
+      <div data-framework-panel={group.id}>
+        <div class="flex flex-wrap items-center gap-2 border-b-2 border-base-300 bg-base-200 px-3 py-2">
+          <div class="join" role="tablist" aria-label={`${group.label} files`}>
+            {group.files.map((file, index) => (
+              <button
+                type="button"
+                role="tab"
+                class:list={[
+                  "btn join-item min-h-11 lg:btn-xs lg:min-h-8",
+                  index === 0 && "btn-active",
+                ]}
+                data-file-btn={String(index)}
+                aria-selected={index === 0 ? "true" : "false"}
+              >
+                {file.title}
+              </button>
+            ))}
+          </div>
+          {overlay && (
+            <div class="ml-auto flex items-center gap-1">
+              {frameworks.length > 1 && (
+                <select class="select min-h-11 lg:select-xs lg:min-h-8" data-local-framework aria-label="Frontend framework">
+                  {frameworks.map((item) => (
+                    <option value={item.id}>{item.label}</option>
+                  ))}
+                </select>
+              )}
+              <button type="button" class="btn btn-ghost min-h-11 lg:btn-xs lg:min-h-8" data-copy>
+                Copy
+              </button>
+              <button
+                type="button"
+                class="btn btn-ghost btn-square min-h-11 min-w-11 lg:btn-xs lg:min-h-8 lg:min-w-8"
+                data-code-hide
+                aria-label="Hide code"
+                aria-expanded="true"
+                aria-controls="keel-hero-code"
+              >
+                <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden>
+                  <path d="M6 6l12 12M18 6L6 18"></path>
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
+        {group.files.map((file, index) => (
+          <div data-file-panel={String(index)} class="keel-code">
+            {file.ts ? (
+              <>
+                {!overlay && (
+                  <div class="flex justify-end border-b border-base-300 bg-base-200 px-3 py-1">
+                    <LangToggle scope="block" />
+                  </div>
+                )}
+                <div data-lang-panel="ts" class:list={[overlay && "max-h-64 overflow-auto lg:h-36 lg:max-h-none"]}>
+                  <ShikiCode code={file.ts} lang="ts" />
+                </div>
+                <div data-lang-panel="js" class:list={[overlay && "max-h-64 overflow-auto lg:h-36 lg:max-h-none"]}>
+                  <ShikiCode code={file.js ?? file.ts} lang="js" />
+                </div>
+              </>
+            ) : (
+              <div class:list={[overlay && "max-h-64 overflow-auto lg:h-36 lg:max-h-none"]}>
+                <ShikiCode code={file.code ?? ""} lang={file.lang ?? "ts"} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    ))
+  }
+</div>

@@ -1,0 +1,22 @@
+---
+title: Partial reloads
+description: Keep the module. Reload only the data you name.
+category: advanced
+order: 2
+---
+
+`only` and `except` ride as `X-Keel-Only` / `X-Keel-Except`. The host still
+returns a full seed document, but `data` may omit keys. Combined with
+`preserveState`, the adapter calls `update(ctx)` on the same module instead of
+unmounting.
+
+Use this for flash-message strips, comment lists, and validation 422s where
+scrolling away from the field would be hostile.
+
+```ts
+router.reload({ only: ["comments"] })
+router.visit("/p/hello", { except: ["sidebar"], preserveState: true })
+```
+
+Prefetch warms both the seed and the entry module. Hover prefetch is the default
+on `Link`. A prefetched partial still returns a seed — never HTML.

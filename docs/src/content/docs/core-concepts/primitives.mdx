@@ -1,0 +1,69 @@
+---
+title: Routing primitives
+description: Framework-agnostic router plus a thin adapter.
+category: core-concepts
+order: 5
+---
+
+import CodePair from "../../../components/CodePair.astro"
+
+The router lives in `@kolektiv/keel`. Adapters wrap it. React later is a second
+binding, not a second router.
+
+| Export | Kind | Notes |
+| --- | --- | --- |
+| `router` | core | visit, get/post/put/patch/delete, reload, prefetch, cancel, on |
+| `Link` | component | Renders `<a>` for GET. Non-GET is a button. |
+| `keel` | action | `use:keel` on an existing anchor (Svelte) |
+| `page()` / `usePage()` | function | Reactive seed. No `$page` store. |
+| `Form` | component | Progressive enhancement over `router.visit` |
+| `useForm` | function | Field state, errors, processing, progress |
+| `Head` | component | Title + head tags, reverted on unmount |
+
+<CodePair
+  fw="svelte"
+  title="@kolektiv/keel-svelte"
+  ts={`import { Link, Form, Head, page, router, useForm, keel } from "@kolektiv/keel-svelte"
+
+<Link href="/p/hello" prefetch="hover">Hello</Link>
+<a href="/p/hello" use:keel={{ prefetch: "hover" }}>Hello</a>
+
+const ctx = page<BlogPostPage>()
+router.visit("/settings", { preserveScroll: true })`}
+  js={`import { Link, Form, Head, page, router, useForm, keel } from "@kolektiv/keel-svelte"
+
+<Link href="/p/hello" prefetch="hover">Hello</Link>
+const ctx = page()
+router.visit("/settings", { preserveScroll: true })`}
+/>
+
+<CodePair
+  fw="react"
+  title="@kolektiv/keel-react"
+  ts={`import { Link, Form, Head, usePage, router, useForm } from "@kolektiv/keel-react"
+
+<Link href="/p/hello" prefetch="hover">Hello</Link>
+const ctx = usePage<BlogPostPage>()
+router.visit("/settings", { preserveScroll: true })`}
+  js={`import { Link, Form, Head, usePage, router, useForm } from "@kolektiv/keel-react"
+
+<Link href="/p/hello" prefetch="hover">Hello</Link>
+const ctx = usePage()
+router.visit("/settings", { preserveScroll: true })`}
+/>
+
+## Visit options
+
+Mirrored on `router.visit`, `Link`, and form helpers.
+
+| Option | Meaning |
+| --- | --- |
+| `replace` | Swap history (login, pack switch) |
+| `preserveScroll` | `true`, or `"errors"` after 422 |
+| `preserveState` | Same page id: `update()`, do not remount |
+| `only` / `except` | Partial data reload |
+| `prefetch` | `hover`, `mousedown`, or `mount` |
+| `viewTransition` | Optional `document.startViewTransition` |
+
+Prefetch warms both the seed and the entry module. Hover prefetch is the default
+on `Link`.

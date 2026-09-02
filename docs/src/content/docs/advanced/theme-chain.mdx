@@ -1,0 +1,55 @@
+---
+title: Theme chain
+description: The host picks the pack. Override, account, tenant, then default.
+category: advanced
+order: 1
+---
+
+import Callout from "../../../components/Callout.astro"
+
+`ChainThemeResolver` walks installed manifests until one implements the page id.
+
+Order: request override (`X-Keel-Theme`) → host-stored account record → tenant
+→ default id → remaining packs. A pack that omits the id is skipped, not an
+error.
+
+A host that ships one frontend still uses this resolver. The chain has a
+single default. Installing a second pack — a blog theme an author selected,
+a tenant overlay, a draft — does not change the call site.
+
+This is server policy. A CMS can map a custom domain to a pack, an account to
+an installed theme, an editor to a draft. None of that is a cookie the pack
+reads.
+
+<Callout title="Not a client preference">
+  `ThemeRequest.userPreference` is a value the **host** already knows (session,
+  account, site settings). It is not read from the browser. Packs never store
+  or apply a visitor-selected theme.
+</Callout>
+
+Missing from every pack throws `MissingPageInThemeException`. The host should
+map that to the `notFound` module of the default pack.
+
+This is how a tenant can ship a one-page overlay without forking the whole
+theme, and how a blog author can switch Linen for Harbor without a deploy of
+the Kotlin app.
+
+```kotlin
+val resolver = ChainThemeResolver(
+    packs = installed,
+    defaultId = "default",
+)
+
+val selection = resolver.resolve(
+    ThemeRequest(
+        pageId = "blog.post",
+        path = "/p/hello",
+        overrideId = call.request.header(KeelHeaders.THEME),
+        userPreference = account.themeId, // host-owned, not a cookie
+        tenantId = tenant.id,
+    )
+)
+```
+
+The selected `ThemeSelection` carries the manifest and the page entry (module +
+css). Bootstrap uses that to fill `theme`, `entry`, and `css` on the seed.

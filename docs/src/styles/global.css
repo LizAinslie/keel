@@ -1,0 +1,425 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: catppuccin-mocha --default, catppuccin-macchiato, catppuccin-frappe, catppuccin-latte;
+  logs: false;
+}
+
+/* Color ids (same in every flavor, official Catppuccin OKLCH):
+   base-100 crust (latte: base), base-200 mantle, base-300 base (latte: surface0),
+   base-content text, primary mauve, secondary flamingo, accent teal,
+   neutral surface1, info sapphire, success green, warning peach, error red.
+   Content L offsets from mocha: primary-content 20% (latte 98%),
+   other *-content 40% / 0.400 (latte 98%). Chroma and hue stay with the parent. */
+
+@plugin "daisyui/theme" {
+  name: "catppuccin-mocha";
+  default: true;
+  prefersdark: false;
+  color-scheme: "dark";
+  --color-base-100: oklch(0.183 0.020 284.204);
+  --color-base-200: oklch(0.216 0.025 284.065);
+  --color-base-300: oklch(0.243 0.030 283.911);
+  --color-base-content: oklch(0.879 0.043 272.277);
+  --color-primary: oklch(0.787 0.119 304.769);
+  --color-primary-content: oklch(20% 0.119 304.769);
+  --color-secondary: oklch(0.880 0.042 17.975);
+  --color-secondary-content: oklch(40% 0.042 17.975);
+  --color-accent: oklch(0.858 0.079 182.750);
+  --color-accent-content: oklch(0.400 0.079 182.750);
+  --color-neutral: oklch(0.404 0.032 280.152);
+  --color-neutral-content: oklch(0.879 0.043 272.277);
+  --color-info: oklch(0.791 0.096 228.653);
+  --color-info-content: oklch(40% 0.096 228.653);
+  --color-success: oklch(0.858 0.109 142.715);
+  --color-success-content: oklch(40% 0.109 142.715);
+  --color-warning: oklch(0.824 0.101 52.629);
+  --color-warning-content: oklch(40% 0.101 52.629);
+  --color-error: oklch(0.756 0.130 2.764);
+  --color-error-content: oklch(40% 0.130 2.764);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "catppuccin-macchiato";
+  default: false;
+  prefersdark: false;
+  color-scheme: "dark";
+  --color-base-100: oklch(0.219 0.025 280.657);
+  --color-base-200: oklch(0.249 0.030 278.435);
+  --color-base-300: oklch(0.279 0.035 276.937);
+  --color-base-content: oklch(0.871 0.048 273.665);
+  --color-primary: oklch(0.772 0.126 303.898);
+  --color-primary-content: oklch(20% 0.126 303.898);
+  --color-secondary: oklch(0.863 0.048 18.120);
+  --color-secondary-content: oklch(40% 0.048 18.120);
+  --color-accent: oklch(0.821 0.076 184.100);
+  --color-accent-content: oklch(0.400 0.076 184.100);
+  --color-neutral: oklch(0.426 0.039 276.948);
+  --color-neutral-content: oklch(0.871 0.048 273.665);
+  --color-info: oklch(0.785 0.085 228.378);
+  --color-info-content: oklch(40% 0.085 228.378);
+  --color-success: oklch(0.835 0.108 138.150);
+  --color-success-content: oklch(40% 0.108 138.150);
+  --color-warning: oklch(0.799 0.106 49.638);
+  --color-warning-content: oklch(40% 0.106 49.638);
+  --color-error: oklch(0.737 0.125 11.194);
+  --color-error-content: oklch(40% 0.125 11.194);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "catppuccin-frappe";
+  default: false;
+  prefersdark: false;
+  color-scheme: "dark";
+  --color-base-100: oklch(0.272 0.026 275.115);
+  --color-base-200: oklch(0.297 0.029 276.214);
+  --color-base-300: oklch(0.329 0.032 274.758);
+  --color-base-content: oklch(0.862 0.053 273.347);
+  --color-primary: oklch(0.765 0.111 311.744);
+  --color-primary-content: oklch(20% 0.111 311.744);
+  --color-secondary: oklch(0.844 0.055 18.307);
+  --color-secondary-content: oklch(40% 0.055 18.307);
+  --color-accent: oklch(0.783 0.073 184.645);
+  --color-accent-content: oklch(0.400 0.073 184.645);
+  --color-neutral: oklch(0.460 0.037 272.966);
+  --color-neutral-content: oklch(0.862 0.053 273.347);
+  --color-info: oklch(0.780 0.073 227.880);
+  --color-info-content: oklch(40% 0.073 227.880);
+  --color-success: oklch(0.812 0.107 133.392);
+  --color-success-content: oklch(40% 0.107 133.392);
+  --color-warning: oklch(0.773 0.111 47.726);
+  --color-warning-content: oklch(40% 0.111 47.726);
+  --color-error: oklch(0.717 0.124 19.386);
+  --color-error-content: oklch(40% 0.124 19.386);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "catppuccin-latte";
+  default: false;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(0.958 0.006 264.532);
+  --color-base-200: oklch(0.933 0.009 264.521);
+  --color-base-300: oklch(0.857 0.014 268.476);
+  --color-base-content: oklch(0.435 0.043 279.325);
+  --color-primary: oklch(0.555 0.250 297.016);
+  --color-primary-content: oklch(98% 0.250 297.016);
+  --color-secondary: oklch(0.686 0.126 20.867);
+  --color-secondary-content: oklch(98% 0.126 20.867);
+  --color-accent: oklch(0.602 0.098 201.105);
+  --color-accent-content: oklch(0.980 0.098 201.105);
+  --color-neutral: oklch(0.808 0.017 271.198);
+  --color-neutral-content: oklch(0.435 0.043 279.325);
+  --color-info: oklch(0.648 0.107 212.889);
+  --color-info-content: oklch(98% 0.107 212.889);
+  --color-success: oklch(0.625 0.177 140.445);
+  --color-success-content: oklch(98% 0.177 140.445);
+  --color-warning: oklch(0.692 0.204 42.429);
+  --color-warning-content: oklch(98% 0.204 42.429);
+  --color-error: oklch(0.550 0.216 19.809);
+  --color-error-content: oklch(98% 0.216 19.809);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@theme {
+  --font-display: "Newsreader", "Iowan Old Style", Palatino, serif;
+  --font-sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --color-swatch-latte: #eff1f5;
+  --color-swatch-frappe: #303446;
+  --color-swatch-macchiato: #24273a;
+  --color-swatch-mocha: #1e1e2e;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  line-height: 1.15;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.prose-keel :where(h2, h3) {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-keel :where(h2) {
+  font-size: 1.65rem;
+}
+
+.prose-keel :where(h3) {
+  font-size: 1.25rem;
+}
+
+.prose-keel :where(p, ul, ol) {
+  margin-bottom: 1rem;
+  color: color-mix(in oklab, var(--color-base-content) 82%, transparent);
+}
+
+.prose-keel :where(ul) {
+  list-style: disc;
+  padding-left: 1.2rem;
+}
+
+.prose-keel :where(ol) {
+  list-style: decimal;
+  padding-left: 1.2rem;
+}
+
+.prose-keel :where(li + li) {
+  margin-top: 0.35rem;
+}
+
+.prose-keel :where(a) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-keel :where(strong) {
+  color: var(--color-base-content);
+  font-weight: 600;
+}
+
+.prose-keel :where(code):not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-base-300);
+  padding: 0.1em 0.35em;
+  border-radius: 0.3rem;
+}
+
+.prose-keel :where(pre.astro-code),
+.keel-code pre,
+.keel-code .astro-code {
+  margin: 0;
+  border-radius: 0;
+  padding: 1rem 1.1rem 1.15rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.prose-keel :where(pre.astro-code) {
+  margin: 1.25rem 0;
+  border-radius: var(--radius-box);
+  border: var(--border) solid var(--color-base-300);
+}
+
+.prose-keel :where(table) {
+  width: 100%;
+  font-size: 0.9rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.prose-keel :where(th, td) {
+  padding: 0.7rem 0.85rem;
+  border-bottom: var(--border) solid var(--color-base-300);
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose-keel :where(th) {
+  font-weight: 500;
+  color: color-mix(in oklab, var(--color-base-content) 62%, transparent);
+  font-size: 0.8rem;
+}
+
+.prose-keel :where(blockquote) {
+  border-left: var(--border) solid var(--color-base-300);
+  padding-left: 1rem;
+  margin: 1.25rem 0;
+  color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+}
+
+html[data-lang="ts"] .keel-code:not([data-lang]) [data-lang-panel="js"],
+html[data-lang="js"] .keel-code:not([data-lang]) [data-lang-panel="ts"],
+.keel-code[data-lang="ts"] [data-lang-panel="js"],
+.keel-code[data-lang="js"] [data-lang-panel="ts"] {
+  display: none;
+}
+
+html[data-frontend="svelte"] [data-fw]:not([data-fw~="svelte"]):not([data-fw~="all"]),
+html[data-frontend="react"] [data-fw]:not([data-fw~="react"]):not([data-fw~="all"]) {
+  display: none;
+}
+
+html[data-backend="ktor"] [data-bw]:not([data-bw~="ktor"]):not([data-bw~="all"]) {
+  display: none;
+}
+
+.keel-deck[data-framework="svelte"] [data-framework-panel]:not([data-framework-panel="svelte"]),
+.keel-deck[data-framework="react"] [data-framework-panel]:not([data-framework-panel="react"]),
+.keel-code[data-framework="svelte"] [data-framework-panel]:not([data-framework-panel="svelte"]),
+.keel-code[data-framework="react"] [data-framework-panel]:not([data-framework-panel="react"]) {
+  display: none;
+}
+
+.keel-deck[data-file="0"] [data-file-panel]:not([data-file-panel="0"]),
+.keel-deck[data-file="1"] [data-file-panel]:not([data-file-panel="1"]) {
+  display: none;
+}
+
+[data-showcase][data-code-open="true"] [data-code-show] {
+  display: none;
+}
+
+[data-showcase][data-code-open="false"] [data-code-overlay] {
+  display: none;
+}
+
+[data-code-overlay] {
+  position: relative;
+  margin-top: 0.75rem;
+}
+
+[data-code-show] {
+  position: relative;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 1024px) {
+  [data-code-overlay] {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    margin-top: 0;
+    transform: translateY(50%);
+    padding-inline: 1.25rem;
+  }
+
+  [data-code-show] {
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+  }
+}
+
+.keel-deck-overlay {
+  box-shadow: none;
+}
+
+@media (min-width: 1024px) {
+  .keel-deck-overlay {
+    box-shadow:
+      0 24px 40px -12px oklch(0 0 0 / 0.7),
+      0 10px 16px -8px oklch(0 0 0 / 0.5),
+      0 0 0 1px oklch(0 0 0 / 0.35);
+  }
+}
+
+html[data-code-theme="follow"][data-theme="catppuccin-mocha"] .astro-code,
+html[data-code-theme="mocha"] .astro-code {
+  background-color: var(--shiki-mocha-bg, #1e1e2e) !important;
+}
+
+html[data-code-theme="follow"][data-theme="catppuccin-mocha"] .astro-code span,
+html[data-code-theme="mocha"] .astro-code span {
+  color: var(--shiki-mocha) !important;
+}
+
+html[data-code-theme="follow"][data-theme="catppuccin-macchiato"] .astro-code,
+html[data-code-theme="macchiato"] .astro-code {
+  background-color: var(--shiki-macchiato-bg, #24273a) !important;
+}
+
+html[data-code-theme="follow"][data-theme="catppuccin-macchiato"] .astro-code span,
+html[data-code-theme="macchiato"] .astro-code span {
+  color: var(--shiki-macchiato) !important;
+}
+
+html[data-code-theme="follow"][data-theme="catppuccin-frappe"] .astro-code,
+html[data-code-theme="frappe"] .astro-code {
+  background-color: var(--shiki-frappe-bg, #303446) !important;
+}
+
+html[data-code-theme="follow"][data-theme="catppuccin-frappe"] .astro-code span,
+html[data-code-theme="frappe"] .astro-code span {
+  color: var(--shiki-frappe) !important;
+}
+
+html[data-code-theme="follow"][data-theme="catppuccin-latte"] .astro-code,
+html[data-code-theme="latte"] .astro-code {
+  background-color: var(--shiki-latte-bg, #eff1f5) !important;
+}
+
+html[data-code-theme="follow"][data-theme="catppuccin-latte"] .astro-code span,
+html[data-code-theme="latte"] .astro-code span {
+  color: var(--shiki-latte) !important;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+[popover].dropdown:popover-open {
+  display: flex;
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

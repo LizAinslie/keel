@@ -1,0 +1,295 @@
+---
+import Base from "../layouts/Base.astro"
+import Navbar from "../components/Navbar.astro"
+import Footer from "../components/Footer.astro"
+import CodeDeck from "../components/CodeDeck.astro"
+import CodeBlock from "../components/CodeBlock.astro"
+import BrowserPreview from "../components/BrowserPreview.astro"
+
+const ktorSnippet = `@Serializable
+data class HomePage(val greeting: String)
+
+pages {
+  page<HomePage>("home", "/") {
+    HomePage("Hello")
+  }
+}`
+
+const routeSnippet = `pages {
+  page<BlogPostPage>("blog.post", "/p/{slug}") { call ->
+    BlogPostPage(posts.bySlug(call.parameters.getOrFail("slug")))
+  }
+}`
+
+const themeSnippet = `val selection = resolver.resolve(
+  ThemeRequest(
+    pageId = "blog.post",
+    path = "/p/hello",
+    overrideId = call.request.header(KeelHeaders.THEME),
+    tenantId = site.themeId,
+  ),
+)`
+
+const svelteTs = `<script lang="ts">
+  import { Link, page } from "@kolektiv/keel-svelte"
+  import type { HomePage } from "@app/page-types"
+
+  const ctx = page<HomePage>()
+</script>
+
+<nav>
+  <Link href="/" prefetch="hover">Harbor</Link>
+</nav>
+<main>
+  <p>Typed seed</p>
+  <h1>{ctx.data.greeting}</h1>
+  <p>A greeting from Ktor. This pack is just a page.</p>
+  <Link href="/notes">Open notes</Link>
+</main>`
+
+const svelteJs = `<script>
+  import { Link, page } from "@kolektiv/keel-svelte"
+
+  const ctx = page()
+</script>
+
+<nav>
+  <Link href="/" prefetch="hover">Harbor</Link>
+</nav>
+<main>
+  <p>Typed seed</p>
+  <h1>{ctx.data.greeting}</h1>
+  <p>A greeting from Ktor. This pack is just a page.</p>
+  <Link href="/notes">Open notes</Link>
+</main>`
+
+const reactTs = `import { Link, usePage } from "@kolektiv/keel-react"
+import type { HomePage } from "@app/page-types"
+
+export function Home() {
+  const { data } = usePage<HomePage>()
+  return (
+    <>
+      <nav>
+        <Link href="/" prefetch="hover">Harbor</Link>
+      </nav>
+      <main>
+        <p>Typed seed</p>
+        <h1>{data.greeting}</h1>
+        <p>A greeting from Ktor. This pack is just a page.</p>
+        <Link href="/notes">Open notes</Link>
+      </main>
+    </>
+  )
+}`
+
+const reactJs = `import { Link, usePage } from "@kolektiv/keel-react"
+
+export function Home() {
+  const { data } = usePage()
+  return (
+    <>
+      <nav>
+        <Link href="/" prefetch="hover">Harbor</Link>
+      </nav>
+      <main>
+        <p>Typed seed</p>
+        <h1>{data.greeting}</h1>
+        <p>A greeting from Ktor. This pack is just a page.</p>
+        <Link href="/notes">Open notes</Link>
+      </main>
+    </>
+  )
+}`
+---
+
+<Base title="Keel" description="Host-owned routing for Kotlin MPAs. Declare a page contract, mount one frontend or many packs.">
+  <Navbar />
+  <main id="main">
+    <section class="overflow-visible">
+      <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-12 lg:py-20 xl:max-w-7xl xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+        <div>
+          <h1 class="font-display text-5xl font-medium tracking-tight sm:text-6xl">Keel</h1>
+          <p class="mt-5 max-w-md text-lg text-base-content/70">
+            A host-owned router for Kotlin MPAs. Declare page ids and their
+            data on the server, then mount one frontend — or many installed
+            packs against that same contract. Visitors never store a theme.
+            The host does.
+          </p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a class="btn btn-outline min-h-11" href="/docs">Learn more</a>
+            <a class="btn btn-primary min-h-11" href="/docs/getting-started">Get started</a>
+          </div>
+        </div>
+
+        <div class="lg:pb-28" data-showcase data-code-open="true">
+          <div class="relative">
+            <BrowserPreview />
+            <div
+              id="keel-hero-code"
+              data-code-overlay
+              class="pointer-events-none z-10 flex justify-center"
+              aria-hidden="false"
+            >
+              <div class="pointer-events-auto w-full max-w-md xl:max-w-lg">
+                <CodeDeck
+                  overlay
+                  frameworks={[
+                    {
+                      id: "svelte",
+                      label: "Svelte",
+                      files: [
+                        { title: "route.kt", lang: "kotlin", code: ktorSnippet },
+                        { title: "page.svelte", ts: svelteTs, js: svelteJs },
+                      ],
+                    },
+                    {
+                      id: "react",
+                      label: "React",
+                      files: [
+                        { title: "route.kt", lang: "kotlin", code: ktorSnippet },
+                        { title: "page.tsx", ts: reactTs, js: reactJs },
+                      ],
+                    },
+                  ]}
+                />
+              </div>
+            </div>
+            <div class="z-10 flex justify-center" data-code-show>
+              <button
+                type="button"
+                class="btn btn-ghost min-h-11 px-3 font-normal text-base-content/40 hover:bg-transparent hover:text-base-content/70 lg:btn-xs lg:h-7 lg:min-h-7 lg:px-2"
+                aria-expanded="true"
+                aria-controls="keel-hero-code"
+              >
+                Show code
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="border-t-2 border-base-300">
+      <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2">
+        <div>
+          <p class="font-mono text-xs uppercase tracking-widest text-base-content/50">Page contract</p>
+          <h2 class="mt-3 font-display text-3xl sm:text-4xl">Ids and types live on the host.</h2>
+          <p class="mt-4 text-base-content/70">
+            URLs and payload types are a Kotlin concern. A pack implements
+            <code class="font-mono text-xs">blog.post</code>, never the path
+            pattern. Write one pack for your app, or let authors install any
+            theme typed for those pages.
+          </p>
+          <ul class="mt-6 space-y-3 text-sm">
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">01</span>
+              <span>Register <code class="font-mono text-xs">{`page<T>(id, path)`}</code> — id, serializer, route.</span>
+            </li>
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">02</span>
+              <span>Typegen emits the TS contract packs compile against.</span>
+            </li>
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">03</span>
+              <span>Missing ids fall through the theme chain, then <code class="font-mono text-xs">notFound</code>.</span>
+            </li>
+          </ul>
+        </div>
+        <CodeBlock title="PageRegistry.kt" lang="kotlin" bw="ktor" code={routeSnippet} />
+      </div>
+    </section>
+
+    <section class="border-t-2 border-base-300 bg-base-200">
+      <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2">
+        <div class="lg:order-2">
+          <p class="font-mono text-xs uppercase tracking-widest text-base-content/50">Theme chain</p>
+          <h2 class="mt-3 font-display text-3xl sm:text-4xl">The host picks the bundle.</h2>
+          <p class="mt-4 text-base-content/70">
+            One pack is your UI. Several packs are installed themes.
+            <code class="font-mono text-xs">ChainThemeResolver</code> walks
+            override, account, tenant, then default, and writes the winner
+            into the seed. Visitors never store a theme.
+          </p>
+          <ul class="mt-6 space-y-3 text-sm">
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">01</span>
+              <span>A one-pack app is a chain of one. Same API.</span>
+            </li>
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">02</span>
+              <span>A pack that omits the page id is skipped, not an error.</span>
+            </li>
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">03</span>
+              <span>Authors switch packs without a host deploy.</span>
+            </li>
+          </ul>
+        </div>
+        <div class="lg:order-1">
+          <CodeBlock title="ChainThemeResolver.kt" lang="kotlin" bw="ktor" code={themeSnippet} />
+        </div>
+      </div>
+    </section>
+
+    <section class="border-t-2 border-base-300">
+      <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2">
+        <div>
+          <p class="font-mono text-xs uppercase tracking-widest text-base-content/50">Visits</p>
+          <h2 class="mt-3 font-display text-3xl sm:text-4xl">Navigation is a seed, not HTML.</h2>
+          <p class="mt-4 text-base-content/70">
+            First load is a document: shell, <code class="font-mono text-xs">#__keel_seed</code>,
+            module URL. After that, <code class="font-mono text-xs">X-Keel-Visit</code> returns
+            the same JSON. Partial reloads keep the module. A 422 is still a seed, with errors.
+          </p>
+        </div>
+        <div class="overflow-x-auto rounded-box border-2 border-base-300 bg-base-100">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Header</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr>
+                <td class="font-mono text-xs">X-Keel-Visit</td>
+                <td>JSON seed instead of the HTML shell</td>
+              </tr>
+              <tr>
+                <td class="font-mono text-xs">X-Keel-Only</td>
+                <td>Partial reload: keep these data keys</td>
+              </tr>
+              <tr>
+                <td class="font-mono text-xs">X-Keel-Theme</td>
+                <td>Request a pack override</td>
+              </tr>
+              <tr>
+                <td class="font-mono text-xs">X-Keel-Version</td>
+                <td>Client protocol version</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="border-t-2 border-base-300 bg-base-200">
+      <div class="hero">
+        <div class="hero-content mx-auto max-w-6xl flex-col items-start px-4 py-16 sm:px-6 sm:py-24">
+          <h2 class="max-w-2xl font-display text-3xl font-medium sm:text-5xl">Start with a page id.</h2>
+          <p class="mt-4 max-w-xl text-lg text-base-content/70">
+            Install the core artifact, register a page, mount a pack. One
+            frontend is an app. More packs are themes against the same
+            contract.
+          </p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a class="btn btn-primary min-h-11" href="/docs/getting-started">Get started</a>
+            <a class="btn btn-outline min-h-11" href="/docs">Read the docs</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Base>

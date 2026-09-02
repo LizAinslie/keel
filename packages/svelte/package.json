@@ -1,0 +1,31 @@
+{
+  "name": "@kolektiv/keel-svelte",
+  "version": "0.1.0",
+  "description": "Keel Svelte 5 bindings — Link, Form, Head, page(), useForm.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "svelte": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "svelte": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["src"],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test src/*.test.ts"
+  },
+  "peerDependencies": {
+    "@kolektiv/keel": "workspace:*",
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@kolektiv/keel": "workspace:*",
+    "svelte": "^5.16.0",
+    "typescript": "^5.7.0"
+  }
+}

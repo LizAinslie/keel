@@ -1,0 +1,75 @@
+---
+import ShikiCode from "./ShikiCode.astro"
+import LangToggle from "./LangToggle.astro"
+
+interface FrameworkOption {
+  id: string
+  label: string
+  title?: string
+  lang?: "ts" | "js" | "kotlin" | "json" | "bash"
+  code?: string
+  ts?: string
+  js?: string
+}
+
+interface Props {
+  code?: string
+  lang?: "ts" | "js" | "kotlin" | "json" | "bash"
+  title?: string
+  fw?: string
+  bw?: string
+  frameworks?: FrameworkOption[]
+}
+
+const { code = "", lang = "ts", title, fw = "all", bw = "all", frameworks } = Astro.props
+const hasFrameworks = Boolean(frameworks?.length)
+const defaultFramework = frameworks?.[0]?.id ?? "svelte"
+---
+
+<figure
+  class="keel-code not-prose my-5 overflow-hidden rounded-box border-2 border-base-300"
+  data-fw={fw}
+  data-bw={bw}
+  data-framework={hasFrameworks ? defaultFramework : undefined}
+>
+  <figcaption class="flex items-center justify-between gap-2 border-b-2 border-base-300 bg-base-200 px-3 py-2">
+    <span class="truncate font-mono text-xs tracking-wide opacity-80">{title ?? lang}</span>
+    <div class="flex items-center gap-1">
+      {
+        hasFrameworks && (
+          <select class="select select-xs min-h-8" data-local-framework aria-label="Framework">
+            {frameworks!.map((item) => (
+              <option value={item.id}>{item.label}</option>
+            ))}
+          </select>
+        )
+      }
+      <button type="button" class="btn btn-ghost btn-xs" data-copy>Copy</button>
+    </div>
+  </figcaption>
+  {
+    hasFrameworks ? (
+      frameworks!.map((item) => (
+        <div data-framework-panel={item.id}>
+          {item.ts ? (
+            <div class="keel-code">
+              <div class="flex justify-end border-b border-base-300 bg-base-200 px-3 py-1">
+                <LangToggle scope="block" />
+              </div>
+              <div data-lang-panel="ts">
+                <ShikiCode code={item.ts} lang="ts" />
+              </div>
+              <div data-lang-panel="js">
+                <ShikiCode code={item.js ?? item.ts} lang="js" />
+              </div>
+            </div>
+          ) : (
+            <ShikiCode code={item.code ?? ""} lang={item.lang ?? "ts"} />
+          )}
+        </div>
+      ))
+    ) : (
+      <ShikiCode code={code} lang={lang} />
+    )
+  }
+</figure>

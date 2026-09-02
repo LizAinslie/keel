@@ -1,0 +1,58 @@
+---
+import { CODE_THEMES } from "../lib/themes"
+
+interface Props {
+  id?: string
+  compact?: boolean
+}
+
+const { id = "keel-code-theme-pop", compact = false } = Astro.props
+const anchor = `--${id}`
+---
+
+<button
+  type="button"
+  class:list={[
+    "btn btn-ghost",
+    compact ? "btn-square btn-xs min-h-8 min-w-8" : "btn-sm min-h-11 gap-2 px-3",
+  ]}
+  popovertarget={id}
+  style={`anchor-name:${anchor}`}
+  aria-label="Code editor theme"
+  title="Code theme"
+>
+  <svg class:list={["shrink-0", compact ? "size-4" : "size-5"]} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden>
+    <path d="M8 8 4 12l4 4M16 8l4 4-4 4M14 4l-4 16"></path>
+  </svg>
+  {
+    !compact && (
+      <span data-code-theme-current class="hidden sm:inline">
+        Follow site theme
+      </span>
+    )
+  }
+</button>
+<ul
+  popover
+  id={id}
+  class="dropdown dropdown-end dropdown-bottom menu menu-sm bg-base-100 rounded-box w-56 border-2 border-base-300 p-2 shadow-lg"
+  style={`position-anchor:${anchor}`}
+>
+  <li class="menu-title">Code theme</li>
+  {
+    CODE_THEMES.map((theme) => (
+      <li>
+        <label class="flex cursor-pointer items-center gap-2">
+          <input
+            type="radio"
+            name="keel-code-theme"
+            class="radio radio-xs radio-primary"
+            data-pref="codeTheme"
+            value={theme.id}
+          />
+          {theme.label}
+        </label>
+      </li>
+    ))
+  }
+</ul>
