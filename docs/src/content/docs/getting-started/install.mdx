@@ -11,8 +11,10 @@ import Callout from "../../../components/Callout.astro"
 
 ## Maven — host
 
-The core artifact has no Ktor dependency. A later `ktor` module will bind routes.
-Publish locally from this repo with the included conventions plugin.
+The core artifact has no Ktor dependency. `dev.kolektiv.keel:ktor` binds the
+registry to routes, serves the HTML shell, and answers visits at
+`/__keel/navigate`. Publish locally from this repo with the included
+conventions plugin.
 
 <CodeBlock lang="kotlin" bw="ktor" title="build.gradle.kts" code={`plugins {
     id("keel.published-library")
@@ -20,6 +22,7 @@ Publish locally from this repo with the included conventions plugin.
 
 dependencies {
     implementation("dev.kolektiv.keel:core:0.1.0-SNAPSHOT")
+    implementation("dev.kolektiv.keel:ktor:0.1.0-SNAPSHOT")
 }`} />
 
 Coordinates: `dev.kolektiv.keel:core`. Protocol format `keel/1`. Seed version `1`.

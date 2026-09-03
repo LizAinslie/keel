@@ -12,6 +12,8 @@ Many packs are installed themes against the same typed contract.
 | Path | What |
 | --- | --- |
 | `lib/` | Kotlin core (`dev.kolektiv.keel:core`) — seed, manifest, `PageRegistry`, theme chain. No Ktor dependency. |
+| `ktor/` | `dev.kolektiv.keel:ktor` — binds the registry, serves the HTML shell, visits, pack files. |
+| `samples/harbor` | Test host: Ktor + Svelte pack. `./gradlew :samples:harbor:run` → http://127.0.0.1:8090 |
 | `packages/core` | `@kolektiv/keel` — visits, history, prefetch |
 | `packages/svelte` | `@kolektiv/keel-svelte` — `Link`, `Form`, `Head`, `page()`, `useForm` |
 | `docs/` | Homepage and guides (Astro 7, Tailwind 4, daisyUI 5, Shiki Catppuccin). pnpm workspace package `@kolektiv/keel-docs`. |
@@ -21,11 +23,12 @@ Many packs are installed themes against the same typed contract.
 ## Commands
 
 ```bash
-./gradlew :lib:test
+./gradlew :lib:test :ktor:test
 pnpm install
 pnpm test && pnpm typecheck
 pnpm --filter @kolektiv/keel-docs build
-pnpm dev                        # http://127.0.0.1:8080
+pnpm dev                        # docs, http://127.0.0.1:8080
+./gradlew :samples:harbor:run    # sample host, http://127.0.0.1:8090
 ```
 
 Java 17, Kotlin 2.1, pnpm 9. The JS workspace root is this repository (`packages/*` and `docs`).

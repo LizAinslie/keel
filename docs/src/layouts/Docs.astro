@@ -6,6 +6,7 @@ import DocsSidebar from "../components/DocsSidebar.astro"
 import FrameworkBar from "../components/FrameworkBar.astro"
 import Mark from "../components/Mark.astro"
 import { allDocs } from "../lib/docs"
+import { path } from "../lib/paths"
 
 interface Props {
   title: string
@@ -21,18 +22,7 @@ const entries = await allDocs()
   <div class="drawer lg:drawer-open">
     <input id="docs-drawer" type="checkbox" class="drawer-toggle" />
     <div class="drawer-content flex min-h-dvh flex-col">
-      <Navbar>
-        <label
-          slot="drawer-button"
-          for="docs-drawer"
-          class="btn btn-ghost btn-square lg:hidden min-h-11 min-w-11"
-          aria-label="Open docs menu"
-        >
-          <svg viewBox="0 0 24 24" class="size-5 stroke-current fill-none" stroke-width="1.8">
-            <path d="M4 7h16M4 12h16M4 17h16"></path>
-          </svg>
-        </label>
-      </Navbar>
+      <Navbar hideBrandOnDesktop drawerId="docs-drawer" />
       <div class="sticky top-16 z-20 border-b border-base-300 bg-base-100/90 backdrop-blur-sm px-4 sm:px-6">
         <div class="mx-auto max-w-3xl">
           <FrameworkBar compact />
@@ -53,18 +43,18 @@ const entries = await allDocs()
     <div class="drawer-side z-40">
       <label for="docs-drawer" class="drawer-overlay" aria-label="Close docs menu"></label>
       <aside class="flex min-h-dvh w-72 flex-col bg-base-200">
-        <div class="px-5 py-5 border-b border-base-300">
-          <div class="flex items-center gap-3">
-            <Mark />
-            <div>
-              <p class="font-mono text-xs uppercase tracking-widest text-base-content/60">Documentation</p>
-              <p class="font-display text-2xl mt-0.5">Keel</p>
-            </div>
-          </div>
-          <p class="mt-3 text-xs text-base-content/55">Protocol keel/1 · Svelte first</p>
-        </div>
+        <a href={path("/")} class="flex items-stretch gap-3 px-5 py-5 border-b border-base-300">
+          <span class="aspect-square self-stretch">
+            <Mark class="size-full" />
+          </span>
+          <span class="flex min-w-0 flex-col justify-center">
+            <span class="font-display text-2xl leading-none tracking-tight">Keel</span>
+            <span class="mt-1 font-mono text-[0.65rem] font-medium uppercase tracking-[0.18em] text-base-content/70">Documentation</span>
+          </span>
+        </a>
         <DocsSidebar entries={entries} currentId={currentId} />
       </aside>
     </div>
   </div>
 </Base>
+

@@ -356,6 +356,12 @@ html[data-backend="ktor"] [data-bw]:not([data-bw~="ktor"]):not([data-bw~="all"])
   }
 }
 
+.keel-docs-menu :where(li > a) {
+  justify-content: flex-start;
+  justify-items: start;
+  text-align: start;
+}
+
 html[data-code-theme="follow"][data-theme="catppuccin-mocha"] .astro-code,
 html[data-code-theme="mocha"] .astro-code {
   background-color: var(--shiki-mocha-bg, #1e1e2e) !important;

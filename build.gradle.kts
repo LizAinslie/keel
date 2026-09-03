@@ -5,6 +5,6 @@ allprojects {
 
 tasks.register("publishAllToMavenLocal") {
     group = "publishing"
-    description = "Publish all library modules to Maven Local."
-    dependsOn(subprojects.map { "${it.path}:publishToMavenLocal" })
+    description = "Publish library modules to Maven Local."
+    dependsOn(":lib:publishToMavenLocal", ":ktor:publishToMavenLocal")
 }

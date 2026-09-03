@@ -1,0 +1,157 @@
+:root {
+  color-scheme: dark;
+  --crust: #11111b;
+  --mantle: #181825;
+  --base: #1e1e2e;
+  --surface: #313244;
+  --text: #cdd6f4;
+  --sub: #a6adc8;
+  --mauve: #cba6f7;
+  --pink: #f5c2e7;
+  --flamingo: #f2cdcd;
+  --teal: #94e2d5;
+  --overlay: #6c7086;
+  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  background: var(--base);
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: radial-gradient(1200px 600px at 10% -10%, #313244 0%, var(--base) 55%);
+}
+
+a {
+  color: var(--mauve);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--pink);
+}
+
+.shell {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.shell header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid var(--surface);
+  padding-bottom: 1rem;
+}
+
+.wordmark {
+  font-family: "Source Serif 4", Palatino, "Times New Roman", serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.shell nav {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.95rem;
+}
+
+.kicker {
+  color: var(--teal);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+h1,
+h2 {
+  font-family: "Source Serif 4", Palatino, "Times New Roman", serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin: 0.35rem 0 0.75rem;
+}
+
+.lede,
+.entry p,
+.copy {
+  color: var(--sub);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.feed {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0 0;
+}
+
+.feed li + li {
+  margin-top: 1.25rem;
+}
+
+.feed a {
+  font-family: "Source Serif 4", Palatino, "Times New Roman", serif;
+  font-size: 1.25rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.feed a:hover {
+  color: var(--mauve);
+}
+
+.excerpt {
+  color: var(--sub);
+  margin: 0.3rem 0 0;
+}
+
+.meta {
+  color: var(--overlay);
+  font-size: 0.85rem;
+}
+
+.search {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1.25rem 0 2rem;
+}
+
+.search input {
+  flex: 1;
+  background: var(--mantle);
+  color: var(--text);
+  border: 1px solid var(--surface);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.search button,
+.back {
+  background: var(--surface);
+  color: var(--text);
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.entry time {
+  color: var(--overlay);
+}

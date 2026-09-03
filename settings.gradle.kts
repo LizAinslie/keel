@@ -15,3 +15,5 @@ dependencyResolutionManagement {
 rootProject.name = "keel"
 
 include("lib")
+include("ktor")
+include("samples:harbor")

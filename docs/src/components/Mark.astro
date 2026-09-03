@@ -1,10 +1,16 @@
 ---
 import { path } from "../lib/paths"
+
+interface Props {
+  class?: string
+}
+
+const { class: className = "size-8" } = Astro.props
 ---
 <img
   src={path("/logo.svg")}
   alt=""
   width="32"
   height="32"
-  class="size-8 shrink-0"
+  class:list={["shrink-0", className]}
 />

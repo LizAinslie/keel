@@ -29,6 +29,7 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 packages/**/dist/
+samples/**/dist/
 pnpm-lock.yaml.bak
 
 # Docs / site output
