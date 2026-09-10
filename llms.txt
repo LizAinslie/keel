@@ -6,27 +6,27 @@ Keel is a protocol plus Kotlin/JS libraries. Format `keel/1`. First host adapter
 
 Live contract: `GET /__keel/schema` on any Keel host. Scaffold a pack with `keel-scaffold <origin> <dir>`.
 
-Docs: https://lizainslie.github.io/keel/  (GitHub Pages; local `pnpm dev` is http://127.0.0.1:8080/)
+Docs: https://keel.mey.cat/  (GitHub Pages; local `pnpm dev` is http://127.0.0.1:8080/)
 
 ## Docs
 
-- [Server Installation](https://lizainslie.github.io/keel/docs/getting-started/server/): Maven — one repo (`maven-releases` or `maven-snapshots`), `dev.kolektiv.keel:core`
-- [Client Setup](https://lizainslie.github.io/keel/docs/getting-started/client/): npm — one registry (`npm-releases` or `npm-snapshots`), `@kolektiv/keel*`
-- [Host (Ktor)](https://lizainslie.github.io/keel/docs/getting-started/host/): stand up a Keel host
-- [Pack (Svelte)](https://lizainslie.github.io/keel/docs/getting-started/pack/): keel-scaffold or keelPack in Vite
-- [Wire protocol](https://lizainslie.github.io/keel/docs/implementing/protocol/): seed JSON, headers, status codes, path grammar, CSRF, `/__keel/schema`
-- [Host adapter](https://lizainslie.github.io/keel/docs/implementing/host-adapter/): what a backend must implement
-- [Pack adapter](https://lizainslie.github.io/keel/docs/implementing/pack-adapter/): PageModule, .feb, RouterAdapter
-- [Typegen](https://lizainslie.github.io/keel/docs/implementing/typegen/): `.ts`, `.d.ts`, JSON contract
-- [Routing](https://lizainslie.github.io/keel/docs/core-concepts/routing/)
-- [Actions](https://lizainslie.github.io/keel/docs/core-concepts/actions/)
-- [Packs](https://lizainslie.github.io/keel/docs/core-concepts/packs/)
+- [Server Installation](https://keel.mey.cat/docs/getting-started/server/): Maven — one repo (`maven-releases` or `maven-snapshots`), `dev.kolektiv.keel:core`
+- [Client Setup](https://keel.mey.cat/docs/getting-started/client/): npm — one registry (`npm-releases` or `npm-snapshots`), `@kolektiv/keel*`
+- [Host (Ktor)](https://keel.mey.cat/docs/getting-started/host/): stand up a Keel host
+- [Pack (Svelte)](https://keel.mey.cat/docs/getting-started/pack/): keel-scaffold or keelPack in Vite
+- [Wire protocol](https://keel.mey.cat/docs/implementing/protocol/): seed JSON, headers, status codes, path grammar, CSRF, `/__keel/schema`
+- [Host adapter](https://keel.mey.cat/docs/implementing/host-adapter/): what a backend must implement
+- [Pack adapter](https://keel.mey.cat/docs/implementing/pack-adapter/): PageModule, .feb, RouterAdapter
+- [Typegen](https://keel.mey.cat/docs/implementing/typegen/): `.ts`, `.d.ts`, JSON contract
+- [Routing](https://keel.mey.cat/docs/core-concepts/routing/)
+- [Actions](https://keel.mey.cat/docs/core-concepts/actions/)
+- [Packs](https://keel.mey.cat/docs/core-concepts/packs/)
 - [AGENTS.md](https://github.com/LizAinslie/keel/blob/main/AGENTS.md): how to work in this repository
 
 ## Optional
 
 - [Harbor sample](https://github.com/LizAinslie/keel/tree/main/samples/harbor): `./gradlew :samples:harbor:run` → http://127.0.0.1:8090
-- [Partial reloads](https://lizainslie.github.io/keel/docs/advanced/partials/)
+- [Partial reloads](https://keel.mey.cat/docs/advanced/partials/)
 
 ## Skills
 

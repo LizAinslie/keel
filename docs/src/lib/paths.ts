@@ -1,4 +1,4 @@
-/** Site base. `/` locally, `/keel/` on GitHub Pages. */
+/** Site base. `/` locally and on keel.mey.cat. */
 export const base = import.meta.env.BASE_URL
 
 const root = base.endsWith("/") ? base.slice(0, -1) : base

@@ -72,10 +72,10 @@ Catppuccin daisyUI themes (`catppuccin-mocha` default). Type: Source Serif 4
 primitives. Code samples: Svelte first, Ktor host. Framework and TS/JS
 selectors live on docs pages only.
 
-On GitHub Pages the site is served under `/keel`. All in-app links must go
-through `path()` in `docs/src/lib/paths.ts` (or `import.meta.env.BASE_URL`).
-Set `GITHUB_PAGES=1` for that build; local `astro dev` stays at `/`. Astro
-emits to `/dist` at the repo root.
+Production docs are `https://keel.mey.cat` (GitHub Pages custom domain, site
+root). All in-app links must go through `path()` in `docs/src/lib/paths.ts`
+(or `import.meta.env.BASE_URL`). The Pages workflow sets `DOCS_SITE`; local
+`astro dev` stays at `/`. Astro emits to `/dist` at the repo root.
 
 ## Contributing
 

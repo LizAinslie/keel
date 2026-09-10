@@ -32,7 +32,7 @@ jobs:
       - name: Build docs
         run: pnpm --filter @kolektiv/keel-docs build
         env:
-          GITHUB_PAGES: "1"
+          DOCS_SITE: https://keel.mey.cat
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -16,8 +16,7 @@ if (existsSync(sandboxPlugin)) {
   extraVitePlugins.push(grokPwaPlugin(), appEnvPlugin())
 }
 
-const githubPages = process.env.GITHUB_PAGES === "1"
-const siteBase = githubPages ? "/keel" : "/"
+const docsSite = process.env.DOCS_SITE ?? "http://localhost:8080"
 const llmsTxt = fileURLToPath(new URL("../llms.txt", import.meta.url))
 
 /** Canonical file is repo-root `llms.txt`. Copy a real file into dist so Pages is not a dangling symlink. */
@@ -35,8 +34,8 @@ function llmsTxtIntegration() {
 }
 
 export default defineConfig({
-  site: githubPages ? "https://lizainslie.github.io" : "http://localhost:8080",
-  base: siteBase,
+  site: docsSite,
+  base: "/",
   output: "static",
   redirects: {
     "/docs/getting-started/install": "/docs/getting-started/server",

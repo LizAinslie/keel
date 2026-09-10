@@ -7,7 +7,7 @@ Host-owned routing and swappable frontend packs for Kotlin servers.
 | Maven | `dev.kolektiv.keel:core`, `dev.kolektiv.keel:ktor` |
 | npm router | `@kolektiv/keel` |
 | npm Svelte | `@kolektiv/keel-svelte` |
-| docs | [lizainslie.github.io/keel](https://lizainslie.github.io/keel/) |
+| docs | [keel.mey.cat](https://keel.mey.cat/) |
 
 Agents (human or otherwise) should read [AGENTS.md](./AGENTS.md).
 
@@ -46,6 +46,7 @@ names as env, or `keel.publishing.yuriCapitalRepoUsername` /
 
 The pnpm workspace lives at the repository root (`packages/*` and `docs`).
 
-Docs deploy from `.github/workflows/pages.yml` to GitHub Pages (`/keel`). Enable
-**Settings → Pages → Source: GitHub Actions**. Pages on a private repo needs
-GitHub Pro; it will serve publicly once the repository is public.
+Docs deploy from `.github/workflows/pages.yml` to GitHub Pages at
+[keel.mey.cat](https://keel.mey.cat/). Enable **Settings → Pages → Source:
+GitHub Actions** and the custom domain. Pages on a private repo needs GitHub
+Pro; it will serve publicly once the repository is public.
