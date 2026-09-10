@@ -45,14 +45,30 @@ publishing {
         mavenLocal()
 
         val yuriUser = providers.gradleProperty("keel.publishing.yuriCapitalRepoUsername")
+            .orElse(providers.environmentVariable("YURI_CAPITAL_REPO_USERNAME"))
         val yuriPass = providers.gradleProperty("keel.publishing.yuriCapitalRepoPassword")
+            .orElse(providers.environmentVariable("YURI_CAPITAL_REPO_PASSWORD"))
         if (yuriUser.isPresent && yuriPass.isPresent) {
+            val user = yuriUser.get()
+            val pass = yuriPass.get()
             maven {
-                name = "YuriCapital"
+                name = "keelMaven"
                 url = uri("https://repo.yuri.capital/repository/keel-maven/")
                 credentials {
-                    username = yuriUser.get()
-                    password = yuriPass.get()
+                    username = user
+                    password = pass
+                }
+            }
+            val snapshot = project.version.toString().contains("SNAPSHOT", ignoreCase = true)
+            maven {
+                name = if (snapshot) "yuriSnapshots" else "yuriReleases"
+                url = uri(
+                    if (snapshot) "https://repo.yuri.capital/repository/maven-snapshots/"
+                    else "https://repo.yuri.capital/repository/maven-releases/",
+                )
+                credentials {
+                    username = user
+                    password = pass
                 }
             }
         }

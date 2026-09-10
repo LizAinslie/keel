@@ -5,7 +5,8 @@ Thumbs.db
 *~
 
 # Editors
-.idea/
+.idea/*
+!.idea/icon.svg
 *.iml
 *.ipr
 *.iws
@@ -77,3 +78,5 @@ coverage/
 /.project_id
 
 .claude/settings.local.json
+packages/svelte/test/.compiled/
+packages/svelte/.svelte-kit/
