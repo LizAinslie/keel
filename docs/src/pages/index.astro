@@ -31,6 +31,10 @@ const themeSnippet = `val selection = resolver.resolve(
   ),
 )`
 
+const packSnippet = `val prod = FrontendBundle.fromFile(Path.of("pack/dist/app.feb"))
+val dev = FrontendBundle.fromDirectory(Path.of("pack/dist"))
+val jar = FrontendBundle.fromResource("keel/app.feb")`
+
 const svelteTs = `<script lang="ts">
   import { Link, page } from "@kolektiv/keel-svelte"
   import type { HomePage } from "@app/page-types"
@@ -65,7 +69,10 @@ const svelteJs = `<script>
 </main>`
 ---
 
-<Base title="Keel" description="Host-owned routing for Kotlin MPAs. Declare a page contract, mount one frontend or many packs.">
+<Base
+  title="Keel"
+  description="Host-owned routing for Kotlin MPAs. The server owns URLs, page ids, and payload types. Frontend packs implement those ids — never paths — and ship as .feb bundles."
+>
   <Navbar />
   <main id="main">
     <section class="overflow-visible">
@@ -73,9 +80,9 @@ const svelteJs = `<script>
         <div>
           <h1 class="font-display text-5xl font-medium tracking-tight sm:text-6xl">Keel</h1>
           <p class="mt-5 max-w-md text-lg text-base-content/70">
-            A host-owned router for Kotlin MPAs. Declare page ids and their
-            data on the server, then mount one frontend — or many installed
-            packs against that same contract.
+            Host-owned routing for Kotlin MPAs. Declare page ids and their
+            data on the server, then mount one frontend — or many packs
+            against that same typed contract.
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
             <a class="btn btn-outline min-h-11" href={path("/docs")}>Learn more</a>
@@ -141,7 +148,7 @@ const svelteJs = `<script>
             </li>
             <li class="flex gap-3">
               <span class="font-mono text-base-content/50">02</span>
-              <span>Typegen emits the TS contract packs compile against.</span>
+              <span>Gradle typegen (or a live <code class="font-mono text-xs">GET /__keel/schema</code>) emits the TS/JSON contract packs compile against.</span>
             </li>
             <li class="flex gap-3">
               <span class="font-mono text-base-content/50">03</span>
@@ -154,6 +161,42 @@ const svelteJs = `<script>
     </section>
 
     <section class="border-t-2 border-base-300 bg-base-200">
+      <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2">
+        <div>
+          <p class="font-mono text-xs uppercase tracking-widest text-base-content/50">Frontend packs</p>
+          <h2 class="mt-3 font-display text-3xl sm:text-4xl">A pack is a <code class="font-mono text-2xl sm:text-3xl">.feb</code>, not a second app.</h2>
+          <p class="mt-4 text-base-content/70">
+            Packs ship as a zip of <code class="font-mono text-xs">manifest.json</code> plus
+            modules keyed by page id. Vite + <code class="font-mono text-xs">keelPack</code> builds
+            them; the host loads a <code class="font-mono text-xs">FrontendBundle</code> from a jar
+            resource, a file, or an exploded directory in dev. Scaffold from a
+            running host and you get blank pages for every id in the schema.
+          </p>
+          <ul class="mt-6 space-y-3 text-sm">
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">01</span>
+              <span><code class="font-mono text-xs">keel-scaffold &lt;origin&gt; ./pack</code> — schema in, Vite project + empty pages out.</span>
+            </li>
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">02</span>
+              <span><code class="font-mono text-xs">pnpm build</code> → <code class="font-mono text-xs">dist/app.feb</code>.</span>
+            </li>
+            <li class="flex gap-3">
+              <span class="font-mono text-base-content/50">03</span>
+              <span>Point the host at the bundle. Same contract, new UI.</span>
+            </li>
+          </ul>
+          <p class="mt-6 text-sm text-base-content/55">
+            Svelte 5 ships today. React and Vue adapters are on the roadmap —
+            packs already name a <code class="font-mono text-xs">framework</code> and plug in a
+            <code class="font-mono text-xs">RouterAdapter</code>.
+          </p>
+        </div>
+        <CodeBlock title="FrontendBundle.kt" lang="kotlin" bw="ktor" code={packSnippet} />
+      </div>
+    </section>
+
+    <section class="border-t-2 border-base-300">
       <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2">
         <div class="lg:order-2">
           <p class="font-mono text-xs uppercase tracking-widest text-base-content/50">Theme chain</p>
@@ -185,7 +228,7 @@ const svelteJs = `<script>
       </div>
     </section>
 
-    <section class="border-t-2 border-base-300">
+    <section class="border-t-2 border-base-300 bg-base-200">
       <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2">
         <div>
           <p class="font-mono text-xs uppercase tracking-widest text-base-content/50">Visits</p>
@@ -227,14 +270,43 @@ const svelteJs = `<script>
       </div>
     </section>
 
+    <section class="border-t-2 border-base-300">
+      <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+        <p class="font-mono text-xs uppercase tracking-widest text-base-content/50">Why Keel</p>
+        <h2 class="mt-3 max-w-2xl font-display text-3xl sm:text-4xl">The contract stays on the server.</h2>
+        <ul class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <li class="rounded-box border-2 border-base-300 bg-base-100 p-5">
+            <h3 class="font-display text-lg font-medium">Kotlin is the source of truth</h3>
+            <p class="mt-2 text-sm text-base-content/70">kotlinx.serialization types + page ids. Packs don’t invent routes.</p>
+          </li>
+          <li class="rounded-box border-2 border-base-300 bg-base-100 p-5">
+            <h3 class="font-display text-lg font-medium">Typed end to end</h3>
+            <p class="mt-2 text-sm text-base-content/70">Typegen and <code class="font-mono text-xs">/__keel/schema</code> keep host and pack honest at build time.</p>
+          </li>
+          <li class="rounded-box border-2 border-base-300 bg-base-100 p-5">
+            <h3 class="font-display text-lg font-medium">Swappable UI</h3>
+            <p class="mt-2 text-sm text-base-content/70">Themes against one contract — install, chain, override.</p>
+          </li>
+          <li class="rounded-box border-2 border-base-300 bg-base-100 p-5">
+            <h3 class="font-display text-lg font-medium">MPA bones, visit speed</h3>
+            <p class="mt-2 text-sm text-base-content/70">Real URLs and document SEO; client navigations fetch seeds.</p>
+          </li>
+          <li class="rounded-box border-2 border-base-300 bg-base-100 p-5 sm:col-span-2 lg:col-span-1">
+            <h3 class="font-display text-lg font-medium">Scaffold, don’t guess</h3>
+            <p class="mt-2 text-sm text-base-content/70">Blank pages for every registered id, ready for Vite.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
     <section class="border-t-2 border-base-300 bg-base-200">
       <div class="hero">
         <div class="hero-content mx-auto max-w-6xl flex-col items-start px-4 py-16 sm:px-6 sm:py-24">
           <h2 class="max-w-2xl font-display text-3xl font-medium sm:text-5xl">Start with a page id.</h2>
           <p class="mt-4 max-w-xl text-lg text-base-content/70">
-            Install the core artifact, register a page, mount a pack. One
-            frontend is an app. More packs are themes against the same
-            contract.
+            Install the core artifact, register a page, scaffold or mount a
+            pack. One frontend is an app. More packs are themes against the
+            same contract.
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
             <a class="btn btn-primary min-h-11" href={path("/docs/getting-started")}>Get started</a>
