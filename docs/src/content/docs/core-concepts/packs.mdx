@@ -1,16 +1,28 @@
 ---
 title: Packs and manifests
-description: A versioned zip of modules keyed by page id.
+description: A versioned .feb zip of modules keyed by page id.
 category: core-concepts
 order: 4
 ---
 
 import { path } from "../../../lib/paths"
+import CodeBlock from "../../../components/CodeBlock.astro"
 
-A pack is a zip. Runtime serves the unpacked tree. `manifest.json` maps page
-ids to modules — the pack's implementation of the <a href={path("/docs/core-concepts/contracts")}>host contract</a>.
+A pack is a `.feb` file: a zip whose root is `manifest.json` plus the modules
+it names (`bootstrap.js`, `pages/`, `chunks/`, `assets/`). There is no nested
+pack directory inside the zip. `manifest.json` maps page ids to modules — the
+pack's implementation of the <a href={path("/docs/core-concepts/contracts")}>host contract</a>.
 A pack may implement a subset; the **host** walks a theme chain and writes the
 chosen pack into the seed.
+
+Authors write a file tree of pages (ids, not URL routes). `@kolektiv/keel-pack`'s
+Vite plugin (`keelPack`, with `svelteFiles()` for Svelte) discovers those files,
+emits a module per id, writes `manifest.json`, and can zip the `.feb`. The JSON
+below is the on-disk format the host reads — not something you hand-edit for
+each page.
+
+The host loads that artifact as a `FrontendBundle` from a **jar resource**, a
+**file**, or an **exploded directory** (dev / watch).
 
 An app with one frontend is a pack that implements every id. A blog theme is
 a pack that implements `blog.home`, `blog.list`, `blog.post` (or a subset)
@@ -35,6 +47,31 @@ against those payload types. Same zip format.
 `framework` tells the host which adapter to expect. It is not a second
 router. A Svelte pack and a React pack can implement the same page ids; the
 host loads the matching entry module.
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="FrontendBundle"
+  code={`val midnight = FrontendBundle.fromResource("keel/midnight.feb")
+val unpacked = FrontendBundle.fromDirectory(Path.of("pack/dist"))
+val file = FrontendBundle.fromFile(Path.of("midnight.feb"))`}
+/>
+
+Asset URLs are per bundle: `/__keel/pack/{bundleId}/…`. Seed `entry` / `css` /
+bootstrap are rewritten to that prefix so multiple bundles on one app do not
+clash.
+
+Pack authors usually run `keelPack({ pack: "dist/app.feb", contract: "src/lib/page-types.ts" })`
+from Vite so the plugin writes the manifest and zip. You can still zip a dist
+with the CLI (`pnpm exec keel-pack --dir dist --out dist/app.feb`). Pass
+`contract` / `--contract` (a typegen `.d.ts` or a JSON list of ids) to fail the
+build when the pack implements an unknown id.
+
+Svelte pages live under `pagesDir` as `+page.svelte`. The id is the directory
+path with `/` turned into `.` (`pages/blog/post/+page.svelte` → `blog.post`).
+Route params like `[slug]` are not ids — the host owns URLs. A sibling
+`+page.ts` may `export const id = "blog.post"` when the folder name should not
+be the id. `+layout.svelte` files wrap descendant pages, root-first.
 
 ## Layouts and notFound
 

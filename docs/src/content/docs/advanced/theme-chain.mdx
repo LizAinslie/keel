@@ -7,7 +7,7 @@ order: 1
 
 import Callout from "../../../components/Callout.astro"
 
-`ChainThemeResolver` walks installed manifests until one implements the page id.
+`ChainThemeResolver` walks installed `FrontendBundle` manifests until one implements the page id.
 
 Order: request override (`X-Keel-Theme`) → host-stored account record → tenant
 → default id → remaining packs. A pack that omits the id is skipped, not an
@@ -36,7 +36,7 @@ the Kotlin app.
 
 ```kotlin
 val resolver = ChainThemeResolver(
-    packs = installed,
+    packs = installed.map { it.manifest },
     defaultId = "default",
 )
 

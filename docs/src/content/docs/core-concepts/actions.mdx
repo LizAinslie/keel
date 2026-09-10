@@ -1,0 +1,88 @@
+---
+title: Server actions
+description: Typed writes. JSON in, JSON out. The seed stays the read model.
+category: core-concepts
+order: 6
+---
+
+import { path } from "../../../lib/paths"
+import Callout from "../../../components/Callout.astro"
+import CodeBlock from "../../../components/CodeBlock.astro"
+import CodePair from "../../../components/CodePair.astro"
+
+Actions are typed RPC. They are not pages. They are not a second read model.
+
+The host writes a Kotlin function: one `@Serializable` input, one
+`@Serializable` output. Annotate the types with `@KeelType` and the function
+with `@KeelAction`. Ktor binds `POST /__keel/action/{id}`, decodes JSON, runs
+the function, and encodes the result. Gradle `generateKeelTypes` walks the
+same annotations Typegen uses for the pack `.d.ts`.
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="@KeelAction"
+  code={`@KeelType
+@Serializable
+data class SetNameIn(val displayName: String)
+
+@KeelType
+@Serializable
+data class SetNameOut(val user: UserRef)
+
+object Board {
+    @KeelAction("harbor.setName")
+    fun ApplicationCall.setName(input: SetNameIn): SetNameOut {
+        val existing = viewer(this)
+        // ...
+    }
+}
+
+keel {
+    actions(Board)
+}`}
+/>
+
+Make the function an extension on `ApplicationCall` when it needs cookies or
+session; `this` is the current request. Validation throws
+`PageValidationException` and becomes **422** `{ "errors": { … } }` — not a
+page seed. Success is **200** `{ "data": … }`. Unknown ids are **404**.
+The `actions { action<In, Out>(id) { } }` DSL is still available when you want
+the handler inline.
+
+The pack never invents a URL. It calls the id:
+
+<CodePair
+  fw="svelte"
+  title="action()"
+  ts={`import { action } from "@kolektiv/keel"
+
+const out = await action<SetNameIn, SetNameOut>("harbor.setName", {
+  displayName: "Ada",
+})`}
+  js={`import { action } from "@kolektiv/keel"
+
+const out = await action("harbor.setName", {
+  displayName: "Ada",
+})`}
+/>
+
+`@kolektiv/keel-svelte` wraps that in `useAction(id)` so a mutation can
+invalidate the current page. See
+<a href={path("/docs/advanced/query")}>Mutate and rehydrate</a>.
+
+Typegen emits the in/out types next to the page map:
+
+```ts
+export interface HarborActions {
+  "harbor.setName": { in: SetNameIn; out: SetNameOut }
+  "harbor.postMessage": { in: PostMessageIn; out: PostMessageOut }
+}
+export type HarborActionId = keyof HarborActions
+```
+
+<Callout title="Writes, not reads">
+  Packs must not `fetch` a second JSON source for page data. After an action
+  succeeds, visit the current URL and rehydrate from the seed. That is the
+  only read model.
+</Callout>

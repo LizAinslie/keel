@@ -24,30 +24,38 @@ more packs. See <a href={path("/docs/core-concepts/contracts")}>Page contracts</
 data class HomePage(val greeting: String)
 
 pages {
-  page<HomePage>("home", "/") { HomePage("hello") }
+  page<HomePage>("home", "/") {
+    head("Hello", description = "A greeting from the host.")
+    HomePage("hello")
+  }
 }`}
 />
 
 The registry is the source of truth for ids and payload serializers. Ktor (or
-any host) walks it to bind routes. Typegen walks it to emit `.d.ts`.
+any host) walks it to bind routes. Typegen walks it to emit `.d.ts` — publish
+that file for theme authors.
+
+The pack file tree is keyed by **page id**, not URL. `pages/home/+page.svelte`
+implements `home`; `pages/harbor/home/+page.svelte` implements `harbor.home`.
+Folders are id segments. They are not routes.
 
 <CodePair
   fw="svelte"
-  title="pages/home.svelte"
+  title="pages/home/+page.svelte"
   ts={`<script lang="ts">
   import { page, Head } from "@kolektiv/keel-svelte"
   import type { HomePage } from "@app/page-types"
   const ctx = page<HomePage>()
 </script>
 
-<Head title={ctx.data.greeting} />
+<Head />
 <h1>{ctx.data.greeting}</h1>`}
   js={`<script>
   import { page, Head } from "@kolektiv/keel-svelte"
   const ctx = page()
 </script>
 
-<Head title={ctx.data.greeting} />
+<Head />
 <h1>{ctx.data.greeting}</h1>`}
 />
 
@@ -61,7 +69,7 @@ export function Home() {
   const { data } = usePage<HomePage>()
   return (
     <>
-      <Head title={data.greeting} />
+      <Head />
       <h1>{data.greeting}</h1>
     </>
   )
@@ -72,12 +80,16 @@ export function Home() {
   const { data } = usePage()
   return (
     <>
-      <Head title={data.greeting} />
+      <Head />
       <h1>{data.greeting}</h1>
     </>
   )
 }`}
 />
+
+`<Head />` reads `page().head` — the same tags the host already wrote into the
+document for crawlers. Pass `title` only to override. See
+<a href={path("/docs/core-concepts/head")}>Document head and SEO</a>.
 
 Bootstrap reads `#__keel_seed`, imports `entry`, and calls `mount(host, ctx)`.
 The adapter generates that wrapper so you write ordinary components.

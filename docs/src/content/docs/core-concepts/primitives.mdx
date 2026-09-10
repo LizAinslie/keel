@@ -13,28 +13,32 @@ binding, not a second router.
 | Export | Kind | Notes |
 | --- | --- | --- |
 | `router` | core | visit, get/post/put/patch/delete, reload, prefetch, cancel, on |
+| `action` | core | `POST /__keel/action/{id}` — typed write, not a page |
 | `Link` | component | Renders `<a>` for GET. Non-GET is a button. |
 | `keel` | action | `use:keel` on an existing anchor (Svelte) |
 | `page()` / `usePage()` | function | Reactive seed. No `$page` store. |
 | `Form` | component | Progressive enhancement over `router.visit` |
 | `useForm` | function | Field state, errors, processing, progress |
-| `Head` | component | Title + head tags, reverted on unmount |
+| `useAction` | function | TanStack mutation: action, then reload the seed |
+| `Head` | component | Reads `page().head`; props override; extra tags are client-only |
 
 <CodePair
   fw="svelte"
   title="@kolektiv/keel-svelte"
-  ts={`import { Link, Form, Head, page, router, useForm, keel } from "@kolektiv/keel-svelte"
+  ts={`import { Link, Form, Head, page, router, useForm, useAction, keel } from "@kolektiv/keel-svelte"
 
 <Link href="/p/hello" prefetch="hover">Hello</Link>
 <a href="/p/hello" use:keel={{ prefetch: "hover" }}>Hello</a>
 
 const ctx = page<BlogPostPage>()
-router.visit("/settings", { preserveScroll: true })`}
-  js={`import { Link, Form, Head, page, router, useForm, keel } from "@kolektiv/keel-svelte"
+router.visit("/settings", { preserveScroll: true })
+const save = useAction<SaveIn, SaveOut>("blog.save")`}
+  js={`import { Link, Form, Head, page, router, useForm, useAction, keel } from "@kolektiv/keel-svelte"
 
 <Link href="/p/hello" prefetch="hover">Hello</Link>
 const ctx = page()
-router.visit("/settings", { preserveScroll: true })`}
+router.visit("/settings", { preserveScroll: true })
+const save = useAction("blog.save")`}
 />
 
 <CodePair

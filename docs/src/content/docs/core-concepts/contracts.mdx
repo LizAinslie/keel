@@ -47,9 +47,29 @@ pages {
 }
 ```
 
-Typegen walks the same registry and emits `.d.ts`. Theme authors depend on
-that artifact — or on a published `blog-contract` module — not on your running
-server.
+Typegen walks `@KeelType` / `@KeelAction` (and still accepts a `PageRegistry`)
+and emits `.d.ts`. Hosts run Gradle `generateKeelTypes` from the `keel.typegen`
+plugin. Theme authors depend on that file — or on a published `blog-contract`
+module — not on your running server. Paths are host-only and optional for
+pages that are only ever returned from custom Ktor routes. Pack authors never
+see paths.
+
+```ts
+export interface HomePage { viewer: UserRef | null; feed: FeedItem[] }
+export interface HarborPages {
+  "harbor.home": HomePage
+  "harbor.user": UserPage
+  "harbor.notFound": NotFoundPage
+}
+export type HarborPageId = keyof HarborPages
+
+export interface HarborActions {
+  "harbor.setName": { in: SetNameIn; out: SetNameOut }
+  "harbor.postMessage": { in: PostMessageIn; out: PostMessageOut }
+}
+```
+
+The map is named `Pages` by default. Publish this file for theme authors.
 
 <CodePair
   fw="svelte"

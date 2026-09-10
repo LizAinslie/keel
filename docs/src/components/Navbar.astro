@@ -42,7 +42,7 @@ const brandClass = hideBrandOnDesktop
   <div class="navbar-end gap-1">
     <a href={path("/docs")} class:list={["btn btn-ghost btn-sm sm:hidden", docsActive && "btn-active"]}>Docs</a>
     {docsActive && (
-      <div class="hidden sm:block">
+      <div class="hidden xs:block">
         <LangToggle />
       </div>
     )}

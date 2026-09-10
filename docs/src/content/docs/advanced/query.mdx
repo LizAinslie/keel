@@ -1,0 +1,60 @@
+---
+title: Mutate and rehydrate
+description: TanStack Query invalidates. A visit reloads the seed. No second API.
+category: advanced
+order: 4
+---
+
+import { path } from "../../../lib/paths"
+import Callout from "../../../components/Callout.astro"
+import CodePair from "../../../components/CodePair.astro"
+
+TanStack Query is the async layer **over visits and actions**, not a REST API
+the pack invents. The host seed is still the only read model. Query makes
+"write, then refetch" fluent in Svelte today and React later — same
+`action()`, different adapter.
+
+The document seed **hydrates** a `QueryClient` (`['keel','page'] → seed`).
+There is no extra GET on first paint. `staleTime` is `Infinity` until
+something invalidates.
+
+`useAction(id)` is a mutation: POST `/__keel/action/{id}`, then
+`router.reload()` so `page()` and the cache rehydrate from the host.
+
+<CodePair
+  fw="svelte"
+  title="useAction"
+  ts={`import { Head, page, useAction } from "@kolektiv/keel-svelte"
+import type { HomePage, PostMessageIn, PostMessageOut } from "../lib/page-types"
+
+const ctx = page<HomePage>()
+const postMessage = useAction<PostMessageIn, PostMessageOut>("harbor.postMessage")
+
+function onPost(event: SubmitEvent) {
+  event.preventDefault()
+  void postMessage.mutateAsync({ body })
+}`}
+  js={`import { Head, page, useAction } from "@kolektiv/keel-svelte"
+
+const ctx = page()
+const postMessage = useAction("harbor.postMessage")
+
+function onPost(event) {
+  event.preventDefault()
+  void postMessage.mutateAsync({ body })
+}`}
+/>
+
+Harbor's Svelte bootstrap creates the client, hydrates from `#__keel_seed`,
+and keeps the cache aligned when visits (`Link`) call `setPage`.
+`useAction` / `useKeelPageQuery` pass that client explicitly.
+
+Do **not** add `/api/messages`. A pack that `fetch`es a second JSON source is
+against protocol. See
+<a href={path("/docs/core-concepts/actions")}>Server actions</a>.
+
+<Callout title="React later">
+  The React adapter will use the same `action()` plus
+  `@tanstack/react-query`. Harbor is Svelte. The invalidation rule does not
+  change: mutate, visit, rehydrate the seed.
+</Callout>

@@ -25,7 +25,7 @@ const groups = groupedDocs(entries)
               {group.pages.map((page) => (
                 <li>
                   <a
-                    class="flex min-h-11 flex-col justify-center rounded-field px-2 py-2 transition-colors duration-150 hover:bg-base-100 sm:flex-row sm:items-baseline sm:gap-3"
+                    class="flex min-h-11 flex-col rounded-field px-2 py-2 transition-colors duration-150 hover:bg-base-100 sm:flex-row sm:items-baseline sm:gap-3"
                     href={path(`/docs/${page.id}`)}
                   >
                     <span class="font-medium">{page.data.title}</span>

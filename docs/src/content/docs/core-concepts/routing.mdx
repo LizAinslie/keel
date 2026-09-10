@@ -6,6 +6,7 @@ order: 1
 ---
 
 import { path } from "../../../lib/paths"
+import CodeBlock from "../../../components/CodeBlock.astro"
 
 URLs are a host concern. A pack is addressed by **page id** (`blog.post`), not
 by `/p/{slug}`. That is what makes a UI swappable: your app pack and a
@@ -23,11 +24,63 @@ The registry plus those serializers **is** the page contract. See
 ## Visit vs document
 
 A first load is a document request. The host returns the HTML shell, the seed
-node (`#__keel_seed`), and a module URL. Client navigation is a **visit**:
-`X-Keel-Visit: true` against `/__keel/navigate?to=…`. The response is the same
+node (`#__keel_seed`), `seed.head` in the real `<head>`, and a module URL.
+That document GET is the **SEO unit** — crawlers and share bots never send
+`X-Keel-Visit`. See
+<a href={path("/docs/core-concepts/head")}>Document head and SEO</a>.
+
+Client navigation is a **visit**: `GET`/`POST` the **page URL** with
+`X-Keel-Visit: true` and `Accept: application/json`. The response is the same
 seed JSON.
 
-Non-GET visits send form or JSON bodies. `422` is still a seed — with `errors`.
+Non-GET visits send form or JSON bodies on that same path. `422` is still a
+seed — with `errors`. Typed JSON **writes** that are not a page go through
+<a href={path("/docs/core-concepts/actions")}>server actions</a>
+(`POST /__keel/action/{id}`). `/__keel/navigate?to=` remains a thin
+compatibility proxy for the pages DSL; custom trees do not need it.
+
+## respondPage
+
+`respondPage` is the primitive. Any Ktor route can return a Keel page. The
+pages DSL is sugar: register path + loader, then on match call `respondPage`.
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="Pages DSL"
+  code={`fun Application.harbor(bundle: FrontendBundle) {
+    keel {
+        this.bundle = bundle
+        title = "Harbor"
+        notFoundPageId = "harbor.notFound"
+        pages {
+            page<HomePage>("harbor.home", "/") { HomePage(...) }
+            page<UserPage>("harbor.user", "/u/{id}") { ... }
+        }
+    }
+}`}
+/>
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="Custom tree"
+  code={`routing {
+    route("/shop") {
+        keel(shopBundle) {
+            get("/{id}") {
+                val item = load(call.parameters.getOrFail("id"))
+                call.respondPage("shop.item", ShopItemPage(item), params = mapOf("id" to item.id))
+            }
+        }
+    }
+}`}
+/>
+
+`Route.keel` registers the bundle for asset serving and sets a default so
+`respondPage(pageId, data)` can omit the bundle argument. It does not steal
+unmatched paths. The `{path...}` not-found catch-all stays on the
+application-level pages DSL only.
 
 ## History
 

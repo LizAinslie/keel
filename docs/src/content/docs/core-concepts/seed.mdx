@@ -5,9 +5,11 @@ category: core-concepts
 order: 3
 ---
 
+import { path } from "../../../lib/paths"
+
 The seed is the contract at runtime. Themes do not parse it; bootstrap does,
 then passes a typed context into `mount()`. Document requests place it in
-`#__keel_seed`. Visits return it as JSON from `/__keel/navigate`.
+`#__keel_seed`. Visits return it as JSON from the page URL (`X-Keel-Visit: true`).
 
 ```json
 {
@@ -20,14 +22,27 @@ then passes a typed context into `mount()`. Document requests place it in
   "theme": { "id": "midnight", "version": "1.2.0" },
   "entry": "/themes/midnight/pages/blog.post.js",
   "css": ["/themes/midnight/assets/blog.post.css"],
-  "host": "#__keel_root"
+  "host": "#__keel_root",
+  "head": {
+    "title": "Hello · Blog",
+    "description": "A post.",
+    "canonical": "https://example.com/p/hello"
+  }
 }
 ```
 
 `theme` and `entry` are whatever the host selected — your only app pack, or
 an installed theme. Optional fields: `shared` (cross-page bag), `layout`,
-`redirect`. `path` must be absolute. `page` and `entry` must be non-blank.
-`v` defaults to `1`.
+`redirect`, `head`. `path` must be absolute. `page` and `entry` must be
+non-blank. `v` defaults to `1`.
+
+## Document head
+
+`head` is the SEO document. On a document GET the host writes it into the
+HTML shell (`<title>`, description, canonical, `og:*`). Crawlers that do not
+run JavaScript never see the pack. Visits return the same `head` on the seed
+so `<Head>` can stay in sync after `pushState`. See
+<a href={path("/docs/core-concepts/head")}>Document head and SEO</a>.
 
 ## Headers
 

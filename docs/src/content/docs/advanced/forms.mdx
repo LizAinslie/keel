@@ -5,11 +5,16 @@ category: advanced
 order: 3
 ---
 
+import { path } from "../../../lib/paths"
 import CodePair from "../../../components/CodePair.astro"
 
 Forms are visits. `Form` progressive-enhances a real `<form>`. `useForm` holds
 field state, errors, processing, and progress. A 422 is still a seed — with
 `errors` — so the page can stay put.
+
+Typed JSON writes that are not a page go through
+<a href={path("/docs/core-concepts/actions")}>server actions</a> and
+<a href={path("/docs/advanced/query")}>`useAction`</a> instead.
 
 <CodePair
   fw="svelte"

@@ -30,19 +30,20 @@ router, different bindings.
 ## The split
 
 - **Keel** — product, CLI, Maven group `dev.kolektiv.keel`
-- **Pack** — a versioned frontend (zip + manifest) keyed by page id, not path
+- **Pack** — a versioned frontend (`.feb` zip + manifest) keyed by page id, not path
 - **Adapter** — `mount` / `unmount` / `update` for a framework (Svelte, later React)
 
 ## What the host does
 
 - Declares `page<T>(id, path)` — id + payload type + path
+- Declares `action<I, O>(id)` — typed writes, JSON in / JSON out
 - Resolves which pack implements that id (one pack, or a chain of installed themes)
-- Renders a shell with `#__keel_seed` or answers `/__keel/navigate` with the same JSON
+- Renders a shell with `#__keel_seed` (and `seed.head` in the document) or answers a visit (`X-Keel-Visit`) with the same JSON
 
 ## What a pack must not do
 
 - Own URL patterns
-- Fetch its own page payload as a second source of truth
+- Fetch its own page payload as a second source of truth — **actions are writes; reads stay the seed**
 - Parse the seed outside bootstrap
 - Read a visitor theme preference from the browser
 

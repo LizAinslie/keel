@@ -12,8 +12,8 @@ import Callout from "../../../components/Callout.astro"
 ## Maven — host
 
 The core artifact has no Ktor dependency. `dev.kolektiv.keel:ktor` binds the
-registry to routes, serves the HTML shell, and answers visits at
-`/__keel/navigate`. Publish locally from this repo with the included
+registry to routes, serves the HTML shell, and answers visits on the page URL
+(`X-Keel-Visit: true`). Publish locally from this repo with the included
 conventions plugin.
 
 <CodeBlock lang="kotlin" bw="ktor" title="build.gradle.kts" code={`plugins {
@@ -21,8 +21,8 @@ conventions plugin.
 }
 
 dependencies {
-    implementation("dev.kolektiv.keel:core:0.1.0-SNAPSHOT")
-    implementation("dev.kolektiv.keel:ktor:0.1.0-SNAPSHOT")
+    implementation("dev.kolektiv.keel:core:0.0.1-SNAPSHOT.1")
+    implementation("dev.kolektiv.keel:ktor:0.0.1-SNAPSHOT.1")
 }`} />
 
 Coordinates: `dev.kolektiv.keel:core`. Protocol format `keel/1`. Seed version `1`.
@@ -41,6 +41,11 @@ router is framework-agnostic. Each rig is a thin binding.
     "@kolektiv/keel": "workspace:*",
     "@kolektiv/keel-svelte": "workspace:*",
     "svelte": "^5.16.0"
+  },
+  "devDependencies": {
+    "@kolektiv/keel-pack": "workspace:*",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "vite": "^6.2.0"
   }
 }`}
   js={`{
@@ -48,8 +53,58 @@ router is framework-agnostic. Each rig is a thin binding.
     "@kolektiv/keel": "workspace:*",
     "@kolektiv/keel-svelte": "workspace:*",
     "svelte": "^5.16.0"
+  },
+  "devDependencies": {
+    "@kolektiv/keel-pack": "workspace:*",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "vite": "^6.2.0"
   }
 }`}
+/>
+
+`@kolektiv/keel-pack` is the pack build: a Vite plugin that discovers `+page.svelte`
+files, writes `manifest.json`, and zips a `.feb`. Point `keelPack` at your pages
+directory and bootstrap; do not list entries by URL.
+
+<CodePair
+  title="vite.config.ts"
+  fw="svelte"
+  ts={`import { svelte } from "@sveltejs/vite-plugin-svelte"
+import { keelPack } from "@kolektiv/keel-pack/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    keelPack({
+      id: "app",
+      version: "0.1.0",
+      framework: "svelte",
+      pagesDir: "src/pages",
+      bootstrap: "src/bootstrap.ts",
+      contract: "src/lib/page-types.ts",
+      pack: "dist/app.feb",
+    }),
+  ],
+})`}
+  js={`import { svelte } from "@sveltejs/vite-plugin-svelte"
+import { keelPack } from "@kolektiv/keel-pack/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    keelPack({
+      id: "app",
+      version: "0.1.0",
+      framework: "svelte",
+      pagesDir: "src/pages",
+      bootstrap: "src/bootstrap.ts",
+      contract: "src/lib/page-types.ts",
+      pack: "dist/app.feb",
+    }),
+  ],
+})`}
 />
 
 <CodePair
@@ -75,3 +130,7 @@ router is framework-agnostic. Each rig is a thin binding.
   Switch the frontend selector to React to see upcoming snippets. The package is
   not published yet — it will implement the same `mount(host, ctx)` contract.
 </Callout>
+
+Mutations use `useAction` plus TanStack Query (`@tanstack/query-core` and
+`@tanstack/svelte-query`). Add those when the pack writes through
+server actions. The seed is still the only read model.
