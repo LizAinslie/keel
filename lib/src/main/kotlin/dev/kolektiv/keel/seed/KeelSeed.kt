@@ -14,8 +14,17 @@ data class KeelThemeRef(
     val version: String,
 )
 
+@Serializable
+data class PageHead(
+    val title: String,
+    val description: String? = null,
+    val canonical: String? = null,
+    val image: String? = null,
+    val type: String? = null,
+)
+
 /**
- * The JSON document placed in `#__keel_seed` and returned by `/__keel/navigate`.
+ * The JSON document placed in `#__keel_seed` and returned by visit requests.
  *
  * [data] is the page's `@Serializable` payload. Themes never parse the seed
  * themselves — bootstrap does, then passes a typed context into `mount()`.
@@ -41,6 +50,7 @@ data class KeelSeed(
     val host: String = Keel.DEFAULT_HOST,
     val layout: String? = null,
     val redirect: String? = null,
+    val head: PageHead? = null,
 ) {
     init {
         require(page.isNotBlank()) { "page id is required" }

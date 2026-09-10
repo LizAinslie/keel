@@ -15,7 +15,12 @@ data class PageBinding(
 
 class DuplicatePageException(id: String) : IllegalStateException("page '$id' is already registered")
 
-class UnknownPageException(id: String) : NoSuchElementException("unknown page '$id'")
+open class UnknownPageException(
+    id: String,
+    message: String = "unknown page '$id'",
+) : NoSuchElementException(message) {
+    val pageId: String = id
+}
 
 /**
  * Source of truth for page ids and payload serializers.

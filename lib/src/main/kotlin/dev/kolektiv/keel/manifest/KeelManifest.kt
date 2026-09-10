@@ -21,7 +21,7 @@ data class KeelCompat(
 )
 
 /**
- * Theme pack manifest (`manifest.json` inside a `.keel` zip).
+ * Theme pack manifest (`manifest.json` at the root of a `.feb` zip).
  *
  * Pages are keyed by **stable page ids**, never URL paths. Paths live on the
  * host. A pack may implement a subset of ids; the host falls back to the

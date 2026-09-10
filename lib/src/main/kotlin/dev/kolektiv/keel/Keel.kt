@@ -14,4 +14,7 @@ object Keel {
     const val DEFAULT_HOST: String = "#__keel_root"
     const val SEED_ELEMENT_ID: String = "__keel_seed"
     const val NAVIGATE_PATH: String = "/__keel/navigate"
+    const val ACTION_PATH: String = "/__keel/action"
+    const val BUNDLE_EXTENSION: String = "feb"
+    const val PACK_URL_PREFIX: String = "/__keel/pack"
 }

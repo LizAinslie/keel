@@ -1,17 +1,21 @@
 package dev.kolektiv.keel
 
+import dev.kolektiv.keel.action.DuplicateActionException
+import dev.kolektiv.keel.action.actions
 import dev.kolektiv.keel.manifest.KeelManifest
 import dev.kolektiv.keel.manifest.KeelPageEntry
 import dev.kolektiv.keel.page.PageRegistry
 import dev.kolektiv.keel.page.pages
 import dev.kolektiv.keel.seed.KeelSeed
 import dev.kolektiv.keel.seed.KeelThemeRef
+import dev.kolektiv.keel.seed.PageHead
 import dev.kolektiv.keel.theme.ChainThemeResolver
 import dev.kolektiv.keel.theme.ThemeRequest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -19,6 +23,12 @@ class KeelCoreTest {
 
     @Serializable
     data class BlogPost(val title: String)
+
+    @Serializable
+    data class EchoIn(val message: String)
+
+    @Serializable
+    data class EchoOut(val message: String)
 
     @Test
     fun `registry matches parameterized paths`() {
@@ -71,5 +81,31 @@ class KeelCoreTest {
         )
         assertEquals("default", selected.manifest.id)
         assertEquals("pages/blog.post.js", selected.entry.module)
+    }
+
+    @Test
+    fun `seed head round-trips through json`() {
+        val seed = KeelSeed(
+            page = "blog.post",
+            path = "/p/hello",
+            data = buildJsonObject { put("title", "Hello") },
+            theme = KeelThemeRef("midnight", "1.0.0"),
+            entry = "/themes/midnight/pages/blog.post.js",
+            head = PageHead(title = "Hello · Blog", description = "A post.", canonical = "/p/hello"),
+        )
+        val encoded = KeelJson.codec.encodeToString(KeelSeed.serializer(), seed)
+        val decoded = KeelJson.codec.decodeFromString(KeelSeed.serializer(), encoded)
+        assertEquals(seed.head, decoded.head)
+        assertTrue(encoded.contains("\"title\":\"Hello · Blog\""))
+    }
+
+    @Test
+    fun `duplicate action ids throw`() {
+        assertThrows(DuplicateActionException::class.java) {
+            actions {
+                action<EchoIn, EchoOut>("echo")
+                action<EchoIn, EchoOut>("echo")
+            }
+        }
     }
 }
