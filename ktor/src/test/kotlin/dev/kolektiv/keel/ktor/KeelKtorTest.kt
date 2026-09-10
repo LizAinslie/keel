@@ -2,21 +2,32 @@ package dev.kolektiv.keel.ktor
 
 import dev.kolektiv.keel.Keel
 import dev.kolektiv.keel.KeelJson
+import dev.kolektiv.keel.bundle.FrontendBundle
 import dev.kolektiv.keel.seed.KeelSeed
 import dev.kolektiv.keel.visit.KeelHeaders
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.ktor.server.application.Application
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
+import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText
 
 class KeelKtorTest {
@@ -30,44 +41,106 @@ class KeelKtorTest {
     @Serializable
     data class MissingPage(val path: String)
 
+    @Serializable
+    data class ShopItem(val sku: String)
+
+    @Serializable
+    data class AdminHome(val label: String)
+
+    @Serializable
+    data class FormPage(val name: String)
+
+    @Serializable
+    data class EchoIn(val message: String)
+
+    @Serializable
+    data class EchoOut(val message: String)
+
     @TempDir
     lateinit var pack: Path
 
-    private fun writePack() {
-        pack.resolve("manifest.json").writeText(
+    @TempDir
+    lateinit var extra: Path
+
+    private fun writePack(
+        dir: Path = pack,
+        id: String = "harbor",
+        pages: Map<String, String> = mapOf(
+            "home" to "pages/home.js",
+            "post" to "pages/post.js",
+            "missing" to "pages/missing.js",
+            "form" to "pages/form.js",
+        ),
+        notFound: String? = "pages/missing.js",
+    ) {
+        val pageEntries = pages.entries.joinToString(",\n") { (pageId, module) ->
+            val css = if (pageId == "home") """, "css": ["assets/styles.css"]""" else ""
+            """"$pageId": { "module": "$module"$css }"""
+        }
+        val notFoundLine = if (notFound != null) {
+            """,
+              "notFound": "$notFound""""
+        } else {
+            ""
+        }
+        dir.resolve("manifest.json").writeText(
             """
             {
               "format": "keel/1",
-              "id": "harbor",
+              "id": "$id",
               "version": "0.1.0",
               "framework": "svelte",
               "host": "#__keel_root",
               "pages": {
-                "home": { "module": "pages/home.js", "css": ["assets/styles.css"] },
-                "post": { "module": "pages/post.js" },
-                "missing": { "module": "pages/missing.js" }
-              },
-              "notFound": "pages/missing.js"
+                $pageEntries
+              }$notFoundLine
             }
             """.trimIndent(),
         )
-        pack.resolve("bootstrap.js").writeText("export {}")
-        pack.resolve("pages").toFile().mkdirs()
-        pack.resolve("pages/home.js").writeText("export async function mount() {}")
+        dir.resolve("bootstrap.js").writeText("export {}")
+        dir.resolve("pages").createDirectories()
+        for (module in pages.values) {
+            dir.resolve(module).writeText("export async function mount() {}")
+        }
+        dir.resolve("assets").createDirectories()
+        dir.resolve("assets/styles.css").writeText("body{}")
     }
 
     private fun Application.installSample() {
         keel {
-            packDir = pack
+            bundle = FrontendBundle.fromDirectory(pack)
             title = "Harbor"
             notFoundPageId = "missing"
             pages {
-                page<HomePage>("home", "/") { HomePage("hello") }
+                page<HomePage>("home", "/") {
+                    head("Home title", description = "A greeting.")
+                    HomePage("hello")
+                }
                 page<PostPage>("post", "/p/{slug}") {
                     if (params.getValue("slug") == "missing") throw PageMissingException(path)
                     PostPage(slug = params.getValue("slug"), title = "Entry")
                 }
+                page<FormPage>("form", "/form") {
+                    head("Form page")
+                    if (method == HttpMethod.Post) {
+                        val body = receiveJson()
+                        val name = body["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        if (name.isBlank()) {
+                            throw PageValidationException(mapOf("name" to listOf("required")), FormPage(name))
+                        }
+                        throw PageRedirectException("/form")
+                    }
+                    FormPage("")
+                }
                 page<MissingPage>("missing", "/__not-found") { MissingPage(path) }
+            }
+            actions {
+                action<EchoIn, EchoOut>("echo") { input ->
+                    if (input.message.isBlank()) {
+                        throw PageValidationException(mapOf("message" to listOf("required")), Unit)
+                    }
+                    EchoOut(input.message)
+                }
             }
         }
     }
@@ -81,9 +154,71 @@ class KeelKtorTest {
         val body = response.bodyAsText()
         assertTrue(body.contains("id=\"__keel_seed\""))
         assertTrue(body.contains("id=\"__keel_root\""))
-        assertTrue(body.contains("/__keel/pack/bootstrap.js"))
-        assertTrue(body.contains("/__keel/pack/pages/home.js"))
+        assertTrue(body.contains("/__keel/pack/harbor/bootstrap.js"))
+        assertTrue(body.contains("/__keel/pack/harbor/pages/home.js"))
         assertTrue(body.contains("hello"))
+        assertTrue(body.contains("Home title"))
+        assertTrue(body.contains("<title"))
+        assertTrue(body.contains("name=\"description\""))
+        assertTrue(body.contains("A greeting."))
+        assertTrue(body.contains("property=\"og:title\""))
+        assertTrue(body.contains("property=\"og:type\""))
+        assertTrue(body.contains("rel=\"canonical\""))
+        assertTrue(body.contains("application/ld+json"))
+        assertTrue(body.contains("<noscript>"))
+    }
+
+    @Test
+    fun `document 422 keeps loader head`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("/form") {
+            contentType(ContentType.Application.Json)
+            setBody("{}")
+        }
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertTrue(response.bodyAsText().contains("Form page"))
+    }
+
+    @Test
+    fun `action success returns data envelope`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("${Keel.ACTION_PATH}/echo") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"message":"ping"}""")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        val body = response.bodyAsText()
+        assertTrue(body.contains("\"data\""))
+        assertTrue(body.contains("ping"))
+        assertTrue(!body.contains("\"page\""))
+    }
+
+    @Test
+    fun `action validation returns 422 errors envelope`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("${Keel.ACTION_PATH}/echo") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"message":""}""")
+        }
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val body = response.bodyAsText()
+        assertTrue(body.contains("\"errors\""))
+        assertTrue(body.contains("message"))
+        assertTrue(!body.contains("\"page\""))
+    }
+
+    @Test
+    fun `unknown action returns 404`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("${Keel.ACTION_PATH}/nope") {
+            contentType(ContentType.Application.Json)
+            setBody("{}")
+        }
+        assertEquals(HttpStatusCode.NotFound, response.status)
     }
 
     @Test
@@ -99,7 +234,27 @@ class KeelKtorTest {
         assertEquals("post", seed.page)
         assertEquals("/p/hello", seed.path)
         assertEquals("hello", seed.params["slug"])
-        assertEquals("/__keel/pack/pages/post.js", seed.entry)
+        assertEquals("/__keel/pack/harbor/pages/post.js", seed.entry)
+    }
+
+    @Test
+    fun `visit header on the page url returns the same seed`() = testApplication {
+        writePack()
+        application { installSample() }
+        val viaProxy = client.get(Keel.NAVIGATE_PATH) {
+            parameter("to", "/p/hello")
+            header(KeelHeaders.VISIT, "true")
+        }
+        val viaPage = client.get("/p/hello") {
+            header(KeelHeaders.VISIT, "true")
+        }
+        assertEquals(HttpStatusCode.OK, viaPage.status)
+        val proxySeed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), viaProxy.bodyAsText())
+        val pageSeed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), viaPage.bodyAsText())
+        assertEquals(proxySeed.page, pageSeed.page)
+        assertEquals(proxySeed.path, pageSeed.path)
+        assertEquals(proxySeed.data, pageSeed.data)
+        assertEquals(proxySeed.entry, pageSeed.entry)
     }
 
     @Test
@@ -124,10 +279,133 @@ class KeelKtorTest {
     }
 
     @Test
-    fun `manifest loader reads pack dir`() {
+    fun `visit post with empty json returns 422 errors`() = testApplication {
         writePack()
-        val manifest = KeelEngine.loadManifest(pack)
-        assertEquals("harbor", manifest.id)
-        assertEquals("pages/home.js", manifest.page("home")?.module)
+        application { installSample() }
+        val response = client.post("/form") {
+            contentType(ContentType.Application.Json)
+            setBody("{}")
+            header(KeelHeaders.VISIT, "true")
+        }
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val seed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), response.bodyAsText())
+        assertEquals("form", seed.page)
+        assertEquals(listOf("required"), seed.errors["name"])
+    }
+
+    @Test
+    fun `visit post with valid json returns redirect`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("/form") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"name":"ok"}""")
+            header(KeelHeaders.VISIT, "true")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        val seed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), response.bodyAsText())
+        assertEquals("/form", seed.redirect)
+    }
+
+    @Test
+    fun `document post with valid json includes redirect in the html seed`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("/form") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"name":"ok"}""")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        val body = response.bodyAsText()
+        assertTrue(body.contains("id=\"__keel_seed\""))
+        assertTrue(body.contains("\"redirect\":\"/form\""))
+    }
+
+    @Test
+    fun `bundle loads from the pack directory`() {
+        writePack()
+        FrontendBundle.fromDirectory(pack).use { bundle ->
+            assertEquals("harbor", bundle.manifest.id)
+            assertEquals("pages/home.js", bundle.manifest.page("home")?.module)
+        }
+    }
+
+    @Test
+    fun `respondPage on a custom route returns html and json visit`() = testApplication {
+        writePack()
+        val bundle = FrontendBundle.fromDirectory(pack)
+        application {
+            keel {
+                this.bundle = bundle
+                title = "Harbor"
+            }
+            routing {
+                get("/alt") {
+                    call.respondPage(bundle, "home", HomePage("hello"))
+                }
+            }
+        }
+        val html = client.get("/alt")
+        assertEquals(HttpStatusCode.OK, html.status)
+        val body = html.bodyAsText()
+        assertTrue(body.contains("id=\"__keel_seed\""))
+        assertTrue(body.contains("/__keel/pack/harbor/pages/home.js"))
+        assertTrue(body.contains("hello"))
+
+        val json = client.get("/alt") {
+            header(KeelHeaders.VISIT, "true")
+        }
+        val seed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), json.bodyAsText())
+        assertEquals("home", seed.page)
+        assertEquals("/alt", seed.path)
+        assertEquals("/__keel/pack/harbor/pages/home.js", seed.entry)
+    }
+
+    @Test
+    fun `two bundles have distinct asset prefixes`() = testApplication {
+        writePack(
+            dir = pack,
+            id = "shop",
+            pages = mapOf("shop.item" to "pages/item.js"),
+            notFound = null,
+        )
+        writePack(
+            dir = extra,
+            id = "admin",
+            pages = mapOf("admin.home" to "pages/home.js"),
+            notFound = null,
+        )
+        val shop = FrontendBundle.fromDirectory(pack)
+        val admin = FrontendBundle.fromDirectory(extra)
+        application {
+            keel {
+                bundles = listOf(shop, admin)
+                title = "Host"
+            }
+            routing {
+                keel(shop) {
+                    get("/shop") {
+                        call.respondPage("shop.item", ShopItem("sku-1"))
+                    }
+                }
+                keel(admin) {
+                    get("/admin") {
+                        call.respondPage("admin.home", AdminHome("ok"))
+                    }
+                }
+            }
+        }
+        val shopBody = client.get("/shop").bodyAsText()
+        assertTrue(shopBody.contains("/__keel/pack/shop/pages/item.js"))
+        assertTrue(shopBody.contains("/__keel/pack/shop/bootstrap.js"))
+        val adminBody = client.get("/admin").bodyAsText()
+        assertTrue(adminBody.contains("/__keel/pack/admin/pages/home.js"))
+        assertTrue(adminBody.contains("/__keel/pack/admin/bootstrap.js"))
+
+        val shopAsset = client.get("/__keel/pack/shop/pages/item.js")
+        assertEquals(HttpStatusCode.OK, shopAsset.status)
+        val adminAsset = client.get("/__keel/pack/admin/bootstrap.js")
+        assertEquals(HttpStatusCode.OK, adminAsset.status)
+        assertEquals("export {}", adminAsset.bodyAsText())
     }
 }
