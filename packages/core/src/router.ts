@@ -1,9 +1,11 @@
+import { announce, focusHost } from "./a11y.ts"
 import { toContext } from "./context.ts"
 import { syncCss } from "./css.ts"
 import { emit, on } from "./events.ts"
 import { pushSeed, seedFromHistory } from "./history.ts"
-import { cacheSeed, readSeed, warmModule } from "./prefetch.ts"
+import { cacheSeed, prefetchSeed, readSeed, warmModule } from "./prefetch.ts"
 import { beginVisit, endVisit, getPage, peekPage, setPage } from "./store.ts"
+import { sendVisit } from "./transport.ts"
 import {
   KEEL_HEADERS,
   type KeelSeed,
@@ -16,6 +18,13 @@ import {
 export interface RouterConfig {
   navigatePath?: string
   host?: Element | null
+  focusOnNavigate?: boolean
+  announce?: boolean | ((seed: KeelSeed) => string)
+}
+
+interface VisitResult {
+  seed: KeelSeed
+  partial: string[] | null
 }
 
 let config: RouterConfig = {}
@@ -54,7 +63,22 @@ export function visitRequestUrl(href: string, navigatePath?: string): string {
   return href
 }
 
-async function fetchSeed(href: string, options: VisitOptions, signal: AbortSignal): Promise<KeelSeed> {
+function mergePartial(seed: KeelSeed, partial: string[] | null): KeelSeed {
+  if (!partial) return seed
+  const previous = peekPage()?.data
+  if (!previous || typeof previous !== "object" || Array.isArray(previous)) return seed
+  if (!seed.data || typeof seed.data !== "object" || Array.isArray(seed.data)) return seed
+  return { ...seed, data: { ...(previous as Record<string, unknown>), ...(seed.data as Record<string, unknown>) } }
+}
+
+function announcementFor(seed: KeelSeed): string | null {
+  const option = config.announce
+  if (option === false) return null
+  if (typeof option === "function") return option(seed)
+  return seed.head?.title ?? (typeof document !== "undefined" ? document.title : "")
+}
+
+async function fetchSeed(href: string, options: VisitOptions, signal: AbortSignal): Promise<VisitResult> {
   const method = options.method ?? "get"
   const url = visitRequestUrl(href, config.navigatePath)
   const headers = new Headers(options.headers)
@@ -73,18 +97,32 @@ async function fetchSeed(href: string, options: VisitOptions, signal: AbortSigna
     }
   }
 
-  const response = await fetch(url, { method: method.toUpperCase(), headers, body, signal })
+  const response = await sendVisit(url, {
+    method: method.toUpperCase(),
+    headers,
+    body,
+    signal,
+    onProgress: options.onProgress,
+  })
+  const partialHeader = response.headers.get(KEEL_HEADERS.partial)
+  const partial = partialHeader != null ? partialHeader.split(",").map((part) => part.trim()).filter(Boolean) : null
+
   if (response.status === 422 || response.status === 404) {
     const seed = (await response.json()) as KeelSeed
-    if (seed && typeof seed.page === "string") return seed
+    if (seed && typeof seed.page === "string") return { seed, partial }
   }
   if (!response.ok) {
     throw new Error(`Keel visit failed (${response.status}) for ${href}`)
   }
-  return (await response.json()) as KeelSeed
+  return { seed: (await response.json()) as KeelSeed, partial }
 }
 
-async function applySeed(seed: KeelSeed, options: VisitOptions, replace: boolean): Promise<void> {
+async function applySeed(
+  seed: KeelSeed,
+  options: VisitOptions,
+  replace: boolean,
+  meta: { initial?: boolean } = {},
+): Promise<void> {
   const sameEntry = currentEntry === seed.entry
   const samePage = peekPage()?.page === seed.page
   const preserve = Boolean(options.preserveState) && sameEntry && samePage && mounted?.update
@@ -106,6 +144,11 @@ async function applySeed(seed: KeelSeed, options: VisitOptions, replace: boolean
     pushSeed(seed, replace)
     if (!shouldPreserveScroll(options, seed)) window.scrollTo(0, 0)
     else window.scrollTo(previousScroll.x, previousScroll.y)
+    if (!meta.initial) {
+      if (config.focusOnNavigate !== false) focusHost(hostEl(seed))
+      const text = announcementFor(seed)
+      if (text) announce(text)
+    }
     emit("navigate", { page: seed })
   }
 
@@ -132,14 +175,16 @@ async function visit(href: string, options: VisitOptions = {}): Promise<void> {
   emit("start", { visit: visitState })
 
   try {
-    const cached = method === "get" ? readSeed(url) : null
-    const seed = cached ?? (await fetchSeed(url, options, controller.signal))
+    const isPartial = Boolean(options.only?.length || options.except?.length)
+    const cached = method === "get" && !isPartial ? readSeed(url) : null
+    const fetched = cached ? { seed: cached, partial: null } : await fetchSeed(url, options, controller.signal)
     if (controller.signal.aborted) {
       visitState.cancelled = true
       options.onCancel?.()
       emit("cancel", { visit: visitState })
       return
     }
+    const seed = mergePartial(fetched.seed, fetched.partial)
     if (seed.redirect) {
       await visit(seed.redirect, { ...options, method: "get", data: undefined })
       return
@@ -171,9 +216,19 @@ async function visit(href: string, options: VisitOptions = {}): Promise<void> {
 async function prefetch(href: string, options: VisitOptions = {}): Promise<void> {
   emit("prefetching", { href })
   const url = buildUrl(href, "get", options.data)
-  if (readSeed(url)) return
-  const seed = await fetchSeed(url, { ...options, method: "get" }, new AbortController().signal)
-  cacheSeed(url, seed)
+  const isPartial = Boolean(options.only?.length || options.except?.length)
+  if (isPartial) {
+    const result = await fetchSeed(url, { ...options, method: "get" }, new AbortController().signal)
+    await warmModule(result.seed.entry)
+    emit("prefetched", { href, page: result.seed })
+    return
+  }
+  const seed = await prefetchSeed(url, async () => {
+    const result = await fetchSeed(url, { ...options, method: "get" }, new AbortController().signal)
+    if (result.partial) return result.seed
+    cacheSeed(url, result.seed)
+    return result.seed
+  })
   await warmModule(seed.entry)
   emit("prefetched", { href, page: seed })
 }
@@ -225,5 +280,5 @@ export async function bootstrap(options: RouterConfig = {}): Promise<void> {
   const node = document.getElementById("__keel_seed")
   if (!node?.textContent) throw new Error("Keel: missing #__keel_seed")
   const seed = JSON.parse(node.textContent) as KeelSeed
-  await applySeed(seed, { replace: true }, true)
+  await applySeed(seed, { replace: true }, true, { initial: true })
 }

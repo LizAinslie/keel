@@ -10,6 +10,7 @@
     "check": "pnpm --filter @kolektiv/keel-docs check",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --filter \"./packages/**\" test",
+    "build:packages": "pnpm --filter @kolektiv/keel --filter @kolektiv/keel-svelte --filter @kolektiv/keel-pack build",
     "harbor": "pnpm --filter @kolektiv/harbor-pack build && ./gradlew :samples:harbor:run"
   }
 }

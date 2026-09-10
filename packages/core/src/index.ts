@@ -4,6 +4,7 @@ export {
   KEEL_FORMAT,
   KEEL_HEADERS,
   KEEL_NAVIGATE_PATH,
+  KEEL_SCHEMA_PATH,
   KEEL_SEED_ELEMENT_ID,
   KEEL_SEED_VERSION,
   type KeelManifest,
@@ -27,3 +28,5 @@ export { getPage, getProcessing, peekPage, setPage, subscribe, subscribeProcessi
 export { toContext } from "./context.ts"
 export { on as onRouterEvent } from "./events.ts"
 export { action, ActionError } from "./action.ts"
+export { sendVisit, type ProgressPayload, type SendVisitOptions } from "./transport.ts"
+export { announce, focusHost } from "./a11y.ts"
