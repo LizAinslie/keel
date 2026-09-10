@@ -54,6 +54,23 @@ test("contract rejects unknown page ids", () => {
   )
 })
 
+test("keel/1 JSON contract reads pages keys", () => {
+  const root = mkdtempSync(join(tmpdir(), "keel-pack-"))
+  const dist = writeDist(root)
+  const contract = join(root, "page-types.json")
+  writeFileSync(
+    contract,
+    JSON.stringify({
+      format: "keel/1",
+      pages: { "demo.home": { type: "HomePage" } },
+      actions: {},
+    }),
+  )
+  const out = join(root, "demo.feb")
+  packFeb({ distDir: dist, outFile: out, contract })
+  assert.ok("manifest.json" in unzipSync(readFileSync(out)))
+})
+
 test("contract from Pages keys allows implemented ids", () => {
   const root = mkdtempSync(join(tmpdir(), "keel-pack-"))
   const dist = writeDist(root)

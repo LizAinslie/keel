@@ -5,6 +5,17 @@ import type { DiscoveredPage, RouterAdapter } from "./adapter.ts"
 import { cssFromBundle, writePackManifest, type ManifestBundle } from "./manifest-write.ts"
 import { packFeb } from "./pack-feb.ts"
 import { svelteFiles } from "./svelte.ts"
+import type { PackManifest } from "./manifest-write.ts"
+
+export interface PackagerOptions {
+  outDir: string
+  root: string
+  id: string
+  version: string
+  manifest: PackManifest
+  contract?: string
+  pack?: string
+}
 
 export interface KeelPackOptions {
   id: string
@@ -17,6 +28,8 @@ export interface KeelPackOptions {
   notFound?: string
   pack?: string
   router?: RouterAdapter
+  manifest?: (base: PackManifest) => PackManifest
+  packager?: (opts: PackagerOptions) => void
 }
 
 const VIRTUAL_PREFIX = "virtual:keel-page/"
@@ -117,7 +130,7 @@ export function keelPack(options: KeelPackOptions): Plugin {
       const outDir = outputOptions.dir ?? resolve(root, "dist")
       const notFound = options.notFound ? pagesMap[options.notFound]?.module : undefined
       const contract = options.contract ? resolve(root, options.contract) : undefined
-      writePackManifest({
+      const written = writePackManifest({
         outDir,
         id: options.id,
         version: options.version,
@@ -127,13 +140,29 @@ export function keelPack(options: KeelPackOptions): Plugin {
         notFound,
         contract,
       })
-      if (options.pack) {
-        packFeb({
-          distDir: outDir,
-          outFile: resolve(root, options.pack),
+      const manifest = options.manifest ? options.manifest(written) : written
+      if (options.manifest) {
+        writePackManifest({
+          outDir,
+          id: manifest.id,
+          version: manifest.version,
+          framework: manifest.framework,
+          host: manifest.host,
+          pages: manifest.pages,
+          notFound: manifest.notFound,
           contract,
         })
       }
+      const packager = options.packager ?? defaultPackager
+      packager({
+        outDir,
+        root,
+        id: manifest.id,
+        version: manifest.version,
+        manifest,
+        contract,
+        pack: options.pack,
+      })
     },
   }
 }
@@ -143,6 +172,15 @@ function virtualPageId(id: string): string | undefined {
   const index = normalized.indexOf(VIRTUAL_PREFIX)
   if (index === -1) return undefined
   return normalized.slice(index + VIRTUAL_PREFIX.length)
+}
+
+function defaultPackager(opts: PackagerOptions): void {
+  if (!opts.pack) return
+  packFeb({
+    distDir: opts.outDir,
+    outFile: resolve(opts.root, opts.pack),
+    contract: opts.contract,
+  })
 }
 
 function defaultRouter(framework: string): RouterAdapter {

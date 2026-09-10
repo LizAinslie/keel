@@ -70,8 +70,14 @@ export function idsFromContract(contractPath: string): Set<string> {
   if (contractPath.endsWith(".json")) {
     const parsed = JSON.parse(source) as unknown
     if (Array.isArray(parsed)) return new Set(parsed.map(String))
-    if (parsed && typeof parsed === "object") return new Set(Object.keys(parsed as Record<string, unknown>))
-    throw new Error(`contract JSON must be an id array or object: ${contractPath}`)
+    if (parsed && typeof parsed === "object") {
+      const obj = parsed as Record<string, unknown>
+      if (obj.format === "keel/1" && obj.pages && typeof obj.pages === "object") {
+        return new Set(Object.keys(obj.pages as Record<string, unknown>))
+      }
+      return new Set(Object.keys(obj))
+    }
+    throw new Error(`contract JSON must be an id array, object, or keel/1 contract: ${contractPath}`)
   }
   const block = source.match(/export interface \w*Pages \{([^}]+)\}/)
   if (!block) {

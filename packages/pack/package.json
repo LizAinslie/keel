@@ -1,33 +1,39 @@
 {
   "name": "@kolektiv/keel-pack",
   "version": "0.1.0",
-  "description": "Zip a Keel pack dist into a .feb archive, and a Vite plugin to discover pages.",
+  "description": "Zip a Keel pack dist into a .feb archive, scaffold packs from /__keel/schema, and a Vite plugin to discover pages.",
   "type": "module",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://repo.yuri.capital/repository/keel-npm/"
+  },
   "bin": {
-    "keel-pack": "./keel-pack.mjs"
+    "keel-pack": "./dist/cli.js",
+    "keel-scaffold": "./dist/scaffold-cli.js"
   },
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./vite": {
-      "types": "./src/vite.ts",
-      "import": "./src/vite.ts",
-      "default": "./src/vite.ts"
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js",
+      "default": "./dist/vite.js"
     },
     "./svelte": {
-      "types": "./src/svelte.ts",
-      "import": "./src/svelte.ts",
-      "default": "./src/svelte.ts"
+      "types": "./dist/svelte.d.ts",
+      "import": "./dist/svelte.js",
+      "default": "./dist/svelte.js"
     }
   },
-  "files": ["src"],
+  "files": ["dist"],
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm build",
     "test": "node --experimental-strip-types --test src/*.test.ts"
   },
   "dependencies": {
