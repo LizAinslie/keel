@@ -1,0 +1,101 @@
+{
+    "format": "keel/1",
+    "pagesName": "HarborPages",
+    "pages": {
+        "harbor.home": {
+            "type": "HomePage",
+            "path": "/__keel-typegen/harbor/home",
+            "methods": [
+                "GET"
+            ]
+        },
+        "harbor.notFound": {
+            "type": "NotFoundPage",
+            "path": "/__keel-typegen/harbor/notFound",
+            "methods": [
+                "GET"
+            ]
+        },
+        "harbor.user": {
+            "type": "UserPage",
+            "path": "/__keel-typegen/harbor/user",
+            "methods": [
+                "GET"
+            ]
+        }
+    },
+    "actions": {
+        "harbor.postMessage": {
+            "in": "PostMessageIn",
+            "out": "PostMessageOut"
+        },
+        "harbor.setName": {
+            "in": "SetNameIn",
+            "out": "SetNameOut"
+        }
+    },
+    "types": {
+        "UserRef": {
+            "kind": "object",
+            "fields": {
+                "id": "string",
+                "displayName": "string"
+            }
+        },
+        "FeedItem": {
+            "kind": "object",
+            "fields": {
+                "id": "string",
+                "userId": "string",
+                "displayName": "string",
+                "body": "string",
+                "at": "string"
+            }
+        },
+        "HomePage": {
+            "kind": "object",
+            "fields": {
+                "viewer": "UserRef | null",
+                "feed": "FeedItem[]"
+            }
+        },
+        "NotFoundPage": {
+            "kind": "object",
+            "fields": {
+                "path": "string",
+                "title": "string"
+            }
+        },
+        "UserPage": {
+            "kind": "object",
+            "fields": {
+                "user": "UserRef",
+                "messages": "FeedItem[]"
+            }
+        },
+        "PostMessageIn": {
+            "kind": "object",
+            "fields": {
+                "body": "string"
+            }
+        },
+        "PostMessageOut": {
+            "kind": "object",
+            "fields": {
+                "message": "FeedItem"
+            }
+        },
+        "SetNameIn": {
+            "kind": "object",
+            "fields": {
+                "displayName": "string"
+            }
+        },
+        "SetNameOut": {
+            "kind": "object",
+            "fields": {
+                "user": "UserRef"
+            }
+        }
+    }
+}

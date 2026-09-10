@@ -11,7 +11,7 @@ export default defineConfig({
       framework: "svelte",
       pagesDir: "src/pages",
       bootstrap: "src/bootstrap.ts",
-      contract: "src/lib/page-types.ts",
+      contract: "src/lib/page-types.json",
       notFound: "harbor.notFound",
       pack: "dist/harbor.feb",
     }),

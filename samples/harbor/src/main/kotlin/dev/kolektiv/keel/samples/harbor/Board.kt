@@ -65,7 +65,13 @@ object Board {
         } else {
             val created = User(id = newId(), displayName = trimmed)
             users[created.id] = created
-            response.cookies.append(COOKIE, created.id, path = "/", httpOnly = true)
+            response.cookies.append(
+                COOKIE,
+                created.id,
+                path = "/",
+                httpOnly = true,
+                extensions = mapOf("SameSite" to "Lax"),
+            )
             created
         }
         return SetNameOut(user.toRef())
