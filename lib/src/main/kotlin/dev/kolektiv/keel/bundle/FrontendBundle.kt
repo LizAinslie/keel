@@ -50,6 +50,23 @@ class FrontendBundle private constructor(
         return normalized in entries
     }
 
+    internal fun entryMeta(path: String): EntryMeta {
+        val normalized = requireEntryPath(path)
+        if (normalized !in entries) throw NoSuchElementException("missing entry '$normalized'")
+        return source.entryMeta(normalized)
+    }
+
+    /** Strong ETag from CRC (zip) or size+mtime (directory). */
+    fun etagFor(path: String): String {
+        val meta = entryMeta(path)
+        val tag = if (meta.crc > 0L) {
+            "${java.lang.Long.toUnsignedString(meta.crc, 16)}-${meta.size}"
+        } else {
+            "${meta.size}-${meta.lastModified}"
+        }
+        return "\"$tag\""
+    }
+
     override fun close() {
         if (closed.compareAndSet(false, true)) {
             source.close()

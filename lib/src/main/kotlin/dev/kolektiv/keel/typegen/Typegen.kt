@@ -1,11 +1,19 @@
 package dev.kolektiv.keel.typegen
 
 import dev.kolektiv.keel.action.ActionRegistry
+import dev.kolektiv.keel.page.PageMethod
 import dev.kolektiv.keel.page.PageRegistry
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.SerialKind
 import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 
 /**
  * Walks [PageRegistry] serializers and emits TypeScript interfaces.
@@ -14,6 +22,8 @@ import kotlinx.serialization.descriptors.StructureKind
  * Sealed polymorphism and contextual serializers are out of scope.
  */
 object Typegen {
+    private val json = Json { prettyPrint = true }
+
     fun emit(
         pages: PageRegistry,
         actions: ActionRegistry = ActionRegistry(),
@@ -24,6 +34,17 @@ object Typegen {
         contract: TypegenContract,
         pagesName: String = "Pages",
     ): String = Emitter(contract, pagesName).emit()
+
+    fun emitJson(
+        pages: PageRegistry,
+        actions: ActionRegistry = ActionRegistry(),
+        pagesName: String = "Pages",
+    ): String = emitJson(TypegenContract(pages.pages, actions.actions), pagesName)
+
+    fun emitJson(
+        contract: TypegenContract,
+        pagesName: String = "Pages",
+    ): String = json.encodeToString(JsonObject.serializer(), Emitter(contract, pagesName).json())
 }
 
 private class Emitter(
@@ -36,16 +57,7 @@ private class Emitter(
     private val visiting = mutableSetOf<String>()
 
     fun emit(): String {
-        for (binding in contract.pages) {
-            collect(binding.serializer.descriptor)
-        }
-        for (binding in contract.actions) {
-            collect(binding.input.descriptor)
-            collect(binding.output.descriptor)
-        }
-        for (serializer in contract.types) {
-            collect(serializer.descriptor)
-        }
+        collectAll()
         val pageIdName = pageIdName(pagesName)
         val actionsName = actionsName(pagesName)
         val actionIdName = actionIdName(pagesName)
@@ -93,6 +105,94 @@ private class Emitter(
                 appendLine()
                 appendLine("export type $actionIdName = keyof $actionsName")
             }
+        }
+    }
+
+    fun json(): JsonObject {
+        collectAll()
+        return buildJsonObject {
+            put("format", "keel/1")
+            put("pagesName", pagesName)
+            put(
+                "pages",
+                buildJsonObject {
+                    for (binding in contract.pages) {
+                        put(
+                            binding.id,
+                            buildJsonObject {
+                                put("type", tsType(binding.serializer.descriptor))
+                                put("path", binding.path)
+                                putJsonArray("methods") {
+                                    for (method in PageMethod.entries) {
+                                        if (method in binding.methods) add(method.name)
+                                    }
+                                }
+                            },
+                        )
+                    }
+                },
+            )
+            put(
+                "actions",
+                buildJsonObject {
+                    for (binding in contract.actions) {
+                        put(
+                            binding.id,
+                            buildJsonObject {
+                                put("in", tsType(binding.input.descriptor))
+                                put("out", tsType(binding.output.descriptor))
+                            },
+                        )
+                    }
+                },
+            )
+            put(
+                "types",
+                buildJsonObject {
+                    for ((_, descriptor) in named) {
+                        val name = aliases.getValue(serialKey(descriptor))
+                        put(
+                            name,
+                            buildJsonObject {
+                                when (descriptor.kind) {
+                                    SerialKind.ENUM -> {
+                                        put("kind", "enum")
+                                        putJsonArray("values") {
+                                            for (i in 0 until descriptor.elementsCount) {
+                                                add(descriptor.getElementName(i))
+                                            }
+                                        }
+                                    }
+                                    else -> {
+                                        put("kind", "object")
+                                        putJsonObject("fields") {
+                                            for (i in 0 until descriptor.elementsCount) {
+                                                put(
+                                                    descriptor.getElementName(i),
+                                                    tsType(descriptor.getElementDescriptor(i)),
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    private fun collectAll() {
+        for (binding in contract.pages) {
+            collect(binding.serializer.descriptor)
+        }
+        for (binding in contract.actions) {
+            collect(binding.input.descriptor)
+            collect(binding.output.descriptor)
+        }
+        for (serializer in contract.types) {
+            collect(serializer.descriptor)
         }
     }
 

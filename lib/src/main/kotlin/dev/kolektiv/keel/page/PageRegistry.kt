@@ -5,13 +5,17 @@ import kotlinx.serialization.serializer
 
 /**
  * A page the host knows how to load. [id] is the contract key themes implement.
- * [path] is a Ktor-style pattern (`/p/{slug}`), owned by the server.
+ * [path] is a Keel pattern (`/p/{slug}`, `/p/{slug?}`, `/p/{rest...}`), owned
+ * by the server. [methods] defaults to GET; POST is opt-in.
  */
 data class PageBinding(
     val id: String,
     val path: String,
     val serializer: KSerializer<*>,
-)
+    val methods: Set<PageMethod> = setOf(PageMethod.GET),
+) {
+    val pattern: PathPattern = PathPattern.parse(path)
+}
 
 class DuplicatePageException(id: String) : IllegalStateException("page '$id' is already registered")
 
@@ -39,15 +43,18 @@ class PageRegistry {
 
     fun register(binding: PageBinding): PageBinding {
         require(binding.id.isNotBlank()) { "page id is required" }
-        require(binding.path.startsWith("/")) { "path must be absolute, got '${binding.path}'" }
+        PathPattern.parse(binding.path)
         if (byId.containsKey(binding.id)) throw DuplicatePageException(binding.id)
         byId[binding.id] = binding
         byPath[binding.path] = binding
         return binding
     }
 
-    inline fun <reified T : Any> page(id: String, path: String): PageBinding =
-        register(PageBinding(id, path, serializer<T>()))
+    inline fun <reified T : Any> page(
+        id: String,
+        path: String,
+        methods: Set<PageMethod> = setOf(PageMethod.GET),
+    ): PageBinding = register(PageBinding(id, path, serializer<T>(), methods))
 
     fun get(id: String): PageBinding =
         byId[id] ?: throw UnknownPageException(id)
@@ -55,36 +62,22 @@ class PageRegistry {
     fun findByPath(path: String): PageBinding? = byPath[path]
 
     fun match(pathname: String): PageBinding? {
-        byPath[pathname]?.let { return it }
-        return byId.values.firstOrNull { matches(it.path, pathname) }
+        var best: PageBinding? = null
+        for (binding in byId.values) {
+            if (!binding.pattern.matches(pathname)) continue
+            if (best == null || binding.pattern.specificity > best.pattern.specificity) {
+                best = binding
+            }
+        }
+        return best
     }
 
     companion object {
-        fun matches(pattern: String, pathname: String): Boolean {
-            val patternParts = pattern.trimEnd('/').split('/')
-            val pathParts = pathname.trimEnd('/').split('/')
-            if (patternParts.size != pathParts.size) return false
-            return patternParts.indices.all { i ->
-                val expected = patternParts[i]
-                expected.startsWith("{") && expected.endsWith("}") || expected == pathParts[i]
-            }
-        }
+        fun matches(pattern: String, pathname: String): Boolean =
+            PathPattern.parse(pattern).matches(pathname)
 
-        fun params(pattern: String, pathname: String): Map<String, String> {
-            val patternParts = pattern.trimEnd('/').split('/')
-            val pathParts = pathname.trimEnd('/').split('/')
-            if (patternParts.size != pathParts.size) return emptyMap()
-            val out = linkedMapOf<String, String>()
-            for (i in patternParts.indices) {
-                val expected = patternParts[i]
-                if (expected.startsWith("{") && expected.endsWith("}")) {
-                    out[expected.removePrefix("{").removeSuffix("}")] = pathParts[i]
-                } else if (expected != pathParts[i]) {
-                    return emptyMap()
-                }
-            }
-            return out
-        }
+        fun params(pattern: String, pathname: String): Map<String, String> =
+            PathPattern.parse(pattern).params(pathname) ?: emptyMap()
     }
 }
 

@@ -2,6 +2,7 @@ package dev.kolektiv.keel.typegen
 
 import dev.kolektiv.keel.action.actions
 import dev.kolektiv.keel.page.pages
+import dev.kolektiv.keel.typegen.TypegenContract
 import kotlinx.serialization.Serializable
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -105,6 +106,27 @@ class TypegenTest {
         assertTrueContains(ts, "export interface HarborActions {")
         assertTrueContains(ts, "\"harbor.setName\": { in: SetNameIn; out: SetNameOut }")
         assertTrueContains(ts, "export type HarborActionId = keyof HarborActions")
+    }
+
+    @Test
+    fun `json contract names page and action types`() {
+        val registry = pages {
+            page<HomePage>("harbor.home", "/")
+        }
+        val actions = actions {
+            action<SetNameIn, SetNameOut>("harbor.setName")
+        }
+        val json = Typegen.emitJson(TypegenContract(registry.pages, actions.actions))
+        assertTrueContains(json, "\"format\": \"keel/1\"")
+        assertTrueContains(json, "\"harbor.home\"")
+        assertTrueContains(json, "\"type\": \"HomePage\"")
+        assertTrueContains(json, "\"path\": \"/\"")
+        assertTrueContains(json, "\"GET\"")
+        assertTrueContains(json, "\"harbor.setName\"")
+        assertTrueContains(json, "\"in\": \"SetNameIn\"")
+        assertTrueContains(json, "\"out\": \"SetNameOut\"")
+        assertTrueContains(json, "\"types\"")
+        assertTrueContains(json, "\"kicker\": \"string\"")
     }
 
     private fun assertTrueContains(haystack: String, needle: String) {

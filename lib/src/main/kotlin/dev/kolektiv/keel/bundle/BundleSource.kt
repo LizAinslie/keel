@@ -4,7 +4,6 @@ import dev.kolektiv.keel.KeelJson
 import dev.kolektiv.keel.manifest.KeelManifest
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.FilterInputStream
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -13,12 +12,19 @@ import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 import kotlin.streams.asSequence
 
+internal data class EntryMeta(
+    val size: Long,
+    val crc: Long,
+    val lastModified: Long,
+)
+
 internal sealed interface BundleSource : AutoCloseable {
     val description: String
     fun readManifest(): KeelManifest
     fun index(): Set<String>
     fun openEntry(path: String): InputStream
     fun openArchive(): InputStream
+    fun entryMeta(path: String): EntryMeta
 }
 
 internal class DirectoryBundleSource(private val dir: Path) : BundleSource {
@@ -57,6 +63,18 @@ internal class DirectoryBundleSource(private val dir: Path) : BundleSource {
 
     override fun openArchive(): InputStream = zipIndexed(this)
 
+    override fun entryMeta(path: String): EntryMeta {
+        val normalized = requireEntryPath(path)
+        val resolved = root.resolve(normalized).normalize()
+        if (!resolved.startsWith(root)) throw UnsafeBundleEntryException(path)
+        if (!Files.isRegularFile(resolved)) throw NoSuchElementException("missing entry '$normalized'")
+        return EntryMeta(
+            size = Files.size(resolved),
+            crc = 0L,
+            lastModified = Files.getLastModifiedTime(resolved).toMillis(),
+        )
+    }
+
     override fun close() = Unit
 }
 
@@ -64,57 +82,66 @@ internal class ZipBundleSource(
     private val file: Path,
     private val deleteFileOnClose: Boolean = false,
 ) : BundleSource {
+    private val lock = Any()
+    private var zip: ZipFile? = null
+
     init {
         require(Files.isRegularFile(file)) { "bundle file does not exist: $file" }
     }
 
     override val description: String get() = file.toString()
 
+    private fun zipFile(): ZipFile = synchronized(lock) {
+        zip ?: ZipFile(file.toFile()).also { zip = it }
+    }
+
     override fun readManifest(): KeelManifest {
-        ZipFile(file.toFile()).use { zip ->
-            val entry = zip.getEntry("manifest.json")
-                ?: throw MissingBundleManifestException(description)
-            return zip.getInputStream(entry).use { stream ->
-                KeelJson.codec.decodeFromString(
-                    KeelManifest.serializer(),
-                    stream.readBytes().decodeToString(),
-                )
-            }
+        val zip = zipFile()
+        val entry = zip.getEntry("manifest.json")
+            ?: throw MissingBundleManifestException(description)
+        return zip.getInputStream(entry).use { stream ->
+            KeelJson.codec.decodeFromString(
+                KeelManifest.serializer(),
+                stream.readBytes().decodeToString(),
+            )
         }
     }
 
     override fun index(): Set<String> {
-        ZipFile(file.toFile()).use { zip ->
-            return zip.entries().asSequence()
-                .filter { !it.isDirectory }
-                .mapNotNull { normalizeEntryPath(it.name) }
-                .toSet()
-        }
+        val zip = zipFile()
+        return zip.entries().asSequence()
+            .filter { !it.isDirectory }
+            .mapNotNull { normalizeEntryPath(it.name) }
+            .toSet()
     }
 
     override fun openEntry(path: String): InputStream {
         val normalized = requireEntryPath(path)
-        val zip = ZipFile(file.toFile())
+        val zip = zipFile()
         val entry = zip.getEntry(normalized)
         if (entry == null || entry.isDirectory) {
-            zip.close()
             throw NoSuchElementException("missing entry '$normalized'")
         }
-        val stream = zip.getInputStream(entry)
-        return object : FilterInputStream(stream) {
-            override fun close() {
-                try {
-                    super.close()
-                } finally {
-                    zip.close()
-                }
-            }
+        return zip.getInputStream(entry)
+    }
+
+    override fun entryMeta(path: String): EntryMeta {
+        val normalized = requireEntryPath(path)
+        val entry = zipFile().getEntry(normalized)
+        if (entry == null || entry.isDirectory) {
+            throw NoSuchElementException("missing entry '$normalized'")
         }
+        val modified = runCatching { entry.lastModifiedTime.toMillis() }.getOrDefault(0L)
+        return EntryMeta(size = entry.size, crc = entry.crc, lastModified = modified)
     }
 
     override fun openArchive(): InputStream = Files.newInputStream(file)
 
     override fun close() {
+        synchronized(lock) {
+            zip?.close()
+            zip = null
+        }
         if (deleteFileOnClose) {
             Files.deleteIfExists(file)
         }

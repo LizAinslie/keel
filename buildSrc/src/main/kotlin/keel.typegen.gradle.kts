@@ -5,10 +5,13 @@ abstract class KeelTypegenExtension {
     abstract val output: RegularFileProperty
     abstract val pagesName: Property<String>
     abstract val packages: ListProperty<String>
+    abstract val format: Property<String>
+    abstract val json: RegularFileProperty
 }
 
 val keelTypegen = extensions.create<KeelTypegenExtension>("keelTypegen")
 keelTypegen.pagesName.convention("Pages")
+keelTypegen.format.convention("ts")
 
 pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
     val compileKotlin = tasks.named<KotlinCompile>("compileKotlin")
@@ -33,6 +36,12 @@ pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
                     add(keelTypegen.output.get().asFile.absolutePath)
                     add("--pages-name")
                     add(keelTypegen.pagesName.get())
+                    add("--format")
+                    add(keelTypegen.format.get())
+                    if (keelTypegen.json.isPresent) {
+                        add("--emit-json")
+                        add(keelTypegen.json.get().asFile.absolutePath)
+                    }
                     for (pkg in keelTypegen.packages.get()) {
                         add("--package")
                         add(pkg)
@@ -43,6 +52,12 @@ pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
         inputs.files(compileKotlin.map { it.outputs })
         inputs.property("pagesName", keelTypegen.pagesName)
         inputs.property("packages", keelTypegen.packages)
+        inputs.property("format", keelTypegen.format)
         outputs.file(keelTypegen.output)
+        outputs.files(
+            provider {
+                if (keelTypegen.json.isPresent) listOf(keelTypegen.json.get().asFile) else emptyList()
+            },
+        )
     }
 }

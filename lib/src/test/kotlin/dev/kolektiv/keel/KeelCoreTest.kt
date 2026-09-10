@@ -5,16 +5,22 @@ import dev.kolektiv.keel.action.actions
 import dev.kolektiv.keel.manifest.KeelManifest
 import dev.kolektiv.keel.manifest.KeelPageEntry
 import dev.kolektiv.keel.page.PageRegistry
+import dev.kolektiv.keel.page.PathPattern
 import dev.kolektiv.keel.page.pages
+import dev.kolektiv.keel.security.CsrfRequest
+import dev.kolektiv.keel.security.CsrfVerdict
+import dev.kolektiv.keel.security.SameOriginCsrfPolicy
 import dev.kolektiv.keel.seed.KeelSeed
 import dev.kolektiv.keel.seed.KeelThemeRef
 import dev.kolektiv.keel.seed.PageHead
+import dev.kolektiv.keel.seed.SeedFilter
 import dev.kolektiv.keel.theme.ChainThemeResolver
 import dev.kolektiv.keel.theme.ThemeRequest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -97,6 +103,77 @@ class KeelCoreTest {
         val decoded = KeelJson.codec.decodeFromString(KeelSeed.serializer(), encoded)
         assertEquals(seed.head, decoded.head)
         assertTrue(encoded.contains("\"title\":\"Hello · Blog\""))
+    }
+
+    @Test
+    fun `path grammar matches optional and tailcard`() {
+        assertTrue(PathPattern.parse("/p/{slug}").matches("/p/hello"))
+        assertEquals(mapOf("slug" to "hello"), PathPattern.parse("/p/{slug}").params("/p/hello"))
+        assertEquals(mapOf("slug" to ""), PathPattern.parse("/p/{slug?}").params("/p"))
+        assertEquals(mapOf("slug" to "hello"), PathPattern.parse("/p/{slug?}").params("/p/hello"))
+        assertNull(PathPattern.parse("/p/{slug?}").params("/p/a/b"))
+        assertEquals(mapOf("rest" to ""), PathPattern.parse("/p/{rest...}").params("/p"))
+        assertEquals(mapOf("rest" to "a/b"), PathPattern.parse("/p/{rest...}").params("/p/a/b"))
+        assertThrows(IllegalArgumentException::class.java) { PathPattern.parse("/p/{a}/{b?}/x") }
+        assertThrows(IllegalArgumentException::class.java) { PathPattern.parse("/p/{a...}/x") }
+        assertThrows(IllegalArgumentException::class.java) { PathPattern.parse("/p/{a}/{a}") }
+        assertThrows(IllegalArgumentException::class.java) { PathPattern.parse("p/{a}") }
+    }
+
+    @Test
+    fun `match prefers the most specific pattern`() {
+        val registry = pages {
+            page<BlogPost>("rest", "/p/{rest...}")
+            page<BlogPost>("slug", "/p/{slug}")
+            page<BlogPost>("new", "/p/new")
+        }
+        assertEquals("new", registry.match("/p/new")?.id)
+        assertEquals("slug", registry.match("/p/hello")?.id)
+        assertEquals("rest", registry.match("/p/a/b")?.id)
+    }
+
+    @Test
+    fun `seed filter keeps top-level keys`() {
+        val data = buildJsonObject {
+            put("feed", "a")
+            put("viewer", "b")
+            put("meta", "c")
+        }
+        val only = SeedFilter.filterData(data, only = setOf("feed"), except = emptySet())
+        assertEquals(setOf("feed"), (only as kotlinx.serialization.json.JsonObject).keys)
+        val except = SeedFilter.filterData(data, only = emptySet(), except = setOf("meta"))
+        assertEquals(setOf("feed", "viewer"), (except as kotlinx.serialization.json.JsonObject).keys)
+    }
+
+    @Test
+    fun `same origin csrf allows json writes without origin`() {
+        val policy = SameOriginCsrfPolicy()
+        val allow = policy.check(
+            CsrfRequest(method = "POST", contentType = "application/json", host = "localhost:8090"),
+        )
+        assertEquals(CsrfVerdict.Allow, allow)
+        val deny = policy.check(
+            CsrfRequest(method = "POST", contentType = "text/plain", host = "localhost:8090"),
+        )
+        assertTrue(deny is CsrfVerdict.Deny)
+        val cross = policy.check(
+            CsrfRequest(
+                method = "POST",
+                contentType = "application/json",
+                origin = "https://evil.test",
+                host = "localhost:8090",
+            ),
+        )
+        assertTrue(cross is CsrfVerdict.Deny)
+        val visit = policy.check(
+            CsrfRequest(
+                method = "POST",
+                contentType = "multipart/form-data",
+                host = "localhost:8090",
+                keelVisit = true,
+            ),
+        )
+        assertEquals(CsrfVerdict.Allow, visit)
     }
 
     @Test

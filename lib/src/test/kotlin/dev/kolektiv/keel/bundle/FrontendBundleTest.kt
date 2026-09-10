@@ -31,6 +31,8 @@ class FrontendBundleTest {
             assertEquals("pages/home.js", page.module)
             assertEquals(listOf("assets/styles.css"), page.css)
             assertTrue(bundle.contains("bootstrap.js"))
+            val etag = bundle.etagFor("bootstrap.js")
+            assertTrue(etag.startsWith("\"") && etag.endsWith("\""))
             val bootstrap = bundle.openEntry("bootstrap.js").use { it.readBytes().decodeToString() }
             assertEquals("export {}", bootstrap)
             assertThrows(UnknownPageInBundleException::class.java) {
