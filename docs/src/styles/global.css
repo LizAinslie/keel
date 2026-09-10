@@ -289,8 +289,7 @@ html[data-lang="js"] .keel-code:not([data-lang]) [data-lang-panel="ts"],
   display: none;
 }
 
-html[data-frontend="svelte"] [data-fw]:not([data-fw~="svelte"]):not([data-fw~="all"]),
-html[data-frontend="react"] [data-fw]:not([data-fw~="react"]):not([data-fw~="all"]) {
+html[data-frontend="svelte"] [data-fw]:not([data-fw~="svelte"]):not([data-fw~="all"]) {
   display: none;
 }
 
@@ -304,9 +303,7 @@ html[data-backend="ktor"] [data-bw]:not([data-bw~="ktor"]):not([data-bw~="all"])
 }
 
 .keel-deck[data-framework="svelte"] [data-framework-panel="svelte"],
-.keel-deck[data-framework="react"] [data-framework-panel="react"],
 .keel-code[data-framework="svelte"] [data-framework-panel="svelte"],
-.keel-code[data-framework="react"] [data-framework-panel="react"],
 .keel-code[data-framework="kts"] [data-framework-panel="kts"],
 .keel-code[data-framework="groovy"] [data-framework-panel="groovy"] {
   display: block;
@@ -323,6 +320,16 @@ html[data-backend="ktor"] [data-bw]:not([data-bw~="ktor"]):not([data-bw~="all"])
 
 [data-showcase][data-code-open="false"] [data-code-overlay] {
   display: none;
+}
+
+@media (max-width: 1023px) {
+  [data-showcase][data-code-open="false"] [data-code-overlay] {
+    display: flex;
+  }
+
+  [data-showcase] [data-code-show] {
+    display: none;
+  }
 }
 
 [data-code-overlay] {

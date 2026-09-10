@@ -6,14 +6,11 @@ order: 3
 ---
 
 import CodePair from "../../../components/CodePair.astro"
-import Callout from "../../../components/Callout.astro"
 import { path } from "../../../lib/paths"
 
-The router is framework-agnostic. Svelte is the first rig. React is sketched
-against the same `PageModule` contract and is not published yet.
-
-Pick **one** npm repository: releases for numbered versions, or snapshots
-for `*-SNAPSHOT*`. Do not point the scope at both.
+Svelte is the first adapter. Pick **one** npm repository: releases for
+numbered versions, or snapshots for `*-SNAPSHOT*`. Do not point the scope
+at both.
 
 ## Releases (recommended)
 
@@ -55,32 +52,6 @@ Then install:
   }
 }`}
 />
-
-<CodePair
-  title="package.json — React pack"
-  fw="react"
-  ts={`{
-  "dependencies": {
-    "@kolektiv/keel": "0.0.1",
-    "@kolektiv/keel-react": "0.0.1",
-    "react": "^19.0.0"
-  }
-}`}
-  js={`{
-  "dependencies": {
-    "@kolektiv/keel": "0.0.1",
-    "@kolektiv/keel-react": "0.0.1",
-    "react": "^19.0.0"
-  }
-}`}
-/>
-
-<Callout title="React is sketched">
-  Switch the frontend selector to React to see upcoming snippets.
-  `@kolektiv/keel-react` is not published yet — it will implement the same
-  `mount(host, ctx)` contract. Until then, scaffold and `keelPack` target
-  Svelte.
-</Callout>
 
 `@kolektiv/keel` is the host router (visits, history, prefetch, `action()`).
 `@kolektiv/keel-svelte` is the Svelte 5 bindings. `@kolektiv/keel-pack` is

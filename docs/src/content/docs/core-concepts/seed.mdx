@@ -6,79 +6,68 @@ order: 3
 ---
 
 import { path } from "../../../lib/paths"
+import CodePair from "../../../components/CodePair.astro"
 
-The seed is the contract at runtime. Themes do not parse it; bootstrap does,
-then passes a typed context into `mount()`. Document requests place it in
-`#__keel_seed`. Visits return it as JSON from the page URL (`X-Keel-Visit: true`).
+The seed is the only **read** model. Document GET places it in
+`#__keel_seed`. Visits return it as JSON (`X-Keel-Visit: true`). Bootstrap
+parses it and passes a typed context into `mount()`.
 
 ```json
 {
   "v": 1,
-  "page": "blog.post",
-  "path": "/p/hello",
-  "params": {
-    "slug": "hello"
-  },
+  "page": "harbor.home",
+  "path": "/",
+  "params": {},
   "data": {
-    "title": "Hello"
+    "viewer": { "id": "ada", "displayName": "Ada" },
+    "feed": []
   },
   "errors": {},
-  "theme": {
-    "id": "midnight",
-    "version": "1.2.0"
-  },
-  "entry": "/themes/midnight/pages/blog.post.js",
-  "css": [
-    "/themes/midnight/assets/blog.post.css"
-  ],
+  "theme": { "id": "harbor", "version": "0.1.0" },
+  "entry": "/__keel/pack/harbor/pages/harbor.home.js",
+  "css": ["/__keel/pack/harbor/assets/mount.css"],
   "host": "#__keel_root",
   "head": {
-    "title": "Hello · Blog",
-    "description": "A post.",
-    "canonical": "https://example.com/p/hello"
+    "title": "Harbor",
+    "description": "An in-memory message board.",
+    "canonical": "https://example.com/"
   }
 }
 ```
 
-`theme` and `entry` are whatever the host selected — your only app pack, or
-an installed theme. Optional fields: `shared` (cross-page bag), `layout`,
-`redirect`, `head`. `path` must be absolute. `page` and `entry` must be
-non-blank. `v` defaults to `1`.
+A Svelte page reads that payload with `page()`. No second fetch.
 
-## Document head
+<CodePair
+  fw="svelte"
+  title="page()"
+  ts={`<script lang="ts">
+  import { page } from "@kolektiv/keel-svelte"
+  import type { HomePage } from "@app/page-types"
 
-`head` is the SEO document. On a document GET the host writes it into the
-HTML shell (`<title>`, description, canonical, `og:*`). Crawlers that do not
-run JavaScript never see the pack. Visits return the same `head` on the seed
-so `<Head>` can stay in sync after `pushState`. See
+  const ctx = page<HomePage>()
+</script>
+
+<p>{ctx.data.viewer?.displayName ?? "Anonymous"}</p>
+<p>{ctx.path}</p>
+<p>{ctx.page}</p>`}
+  js={`<script>
+  import { page } from "@kolektiv/keel-svelte"
+
+  const ctx = page()
+</script>
+
+<p>{ctx.data.viewer?.displayName ?? "Anonymous"}</p>`}
+/>
+
+`theme` and `entry` are whatever the host selected. Optional fields:
+`shared`, `layout`, `redirect`, `head`. `path` is absolute. `page` and
+`entry` are non-blank.
+
+On a document GET the host writes `head` into the HTML shell. Visits return
+the same `head` so `<Head>` stays in sync. See
 <a href={path("/docs/core-concepts/head")}>Document head and SEO</a>.
 
-## Headers
-
-| Header | Purpose |
-| --- | --- |
-| `X-Keel-Visit` | JSON seed instead of the HTML shell |
-| `X-Keel-Only` | Partial reload: keep these data keys |
-| `X-Keel-Except` | Partial reload: drop these data keys |
-| `X-Keel-Theme` | Request a pack override |
-| `X-Keel-Version` | Client protocol version |
-| `X-Keel-Partial` | Visit response: comma-separated `data` keys that were kept |
-
-Partial visits (`X-Keel-Only` / `X-Keel-Except`) filter **top-level** `data`
-keys and only on JSON visits — never on the document GET. The client
-shallow-merges the result over the currently mounted page. See
-<a href={path("/docs/advanced/partials")}>Partial reloads</a>.
-
-## Page module
-
-Every pack page exports the same three functions. Framework adapters generate
-this wrapper so authors write ordinary files.
-
-```ts
-export function mount(host: Element, ctx: PageContext<T>): void
-export function unmount(): void
-export function update?(ctx: PageContext<T>): void  // same page, preserveState
-```
-
-`PageContext` carries `page`, `path`, `params`, `data`, `errors`, `theme`,
-`shared`, and `navigate`.
+Partial reloads (`only` / `except`) filter top-level `data` keys on visits
+only — see <a href={path("/docs/advanced/partials")}>Partial reloads</a>.
+The field list and `X-Keel-*` headers are on
+<a href={path("/docs/implementing/protocol")}>the wire protocol</a>.

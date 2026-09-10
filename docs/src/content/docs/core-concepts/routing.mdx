@@ -7,46 +7,10 @@ order: 1
 
 import { path } from "../../../lib/paths"
 import CodeBlock from "../../../components/CodeBlock.astro"
+import CodePair from "../../../components/CodePair.astro"
 
-URLs are a host concern. A pack is addressed by **page id** (`blog.post`), not
-by `/p/{slug}`. That is what makes a UI swappable: your app pack and a
-third-party theme can both implement `blog.post` while the Ktor route stays
-put. It is also what makes a one-pack app simple — the registry is the only
-router.
-
-`PageRegistry` stores the id, a Keel path pattern, the payload serializer,
-and the HTTP methods the page accepts (GET by default — POST is opt-in).
-Duplicate ids throw. Unknown ids throw. The grammar is `{name}` (required
-segment), `{name?}` (optional trailing segment), and `{name...}` (tailcard).
-When several patterns match, specificity wins: `/p/new` beats `/p/{slug}`
-beats `/p/{rest...}`. See
-<a href={path("/docs/implementing/protocol")}>the wire protocol</a>.
-
-The registry plus those serializers **is** the page contract. See
-<a href={path("/docs/core-concepts/contracts")}>Page contracts</a>.
-
-## Visit vs document
-
-A first load is a document request. The host returns the HTML shell, the seed
-node (`#__keel_seed`), `seed.head` in the real `<head>`, and a module URL.
-That document GET is the **SEO unit** — crawlers and share bots never send
-`X-Keel-Visit`. See
-<a href={path("/docs/core-concepts/head")}>Document head and SEO</a>.
-
-Client navigation is a **visit**: `GET`/`POST` the **page URL** with
-`X-Keel-Visit: true` and `Accept: application/json`. The response is the same
-seed JSON.
-
-Non-GET visits send form or JSON bodies on that same path. `422` is still a
-seed — with `errors`. Typed JSON **writes** that are not a page go through
-<a href={path("/docs/core-concepts/actions")}>server actions</a>
-(`POST /__keel/action/{id}`). `/__keel/navigate?to=` remains a thin
-compatibility proxy for the pages DSL; custom trees do not need it.
-
-## respondPage
-
-`respondPage` is the primitive. Any Ktor route can return a Keel page. The
-pages DSL is sugar: register path + loader, then on match call `respondPage`.
+URLs are a host concern. A pack is addressed by **page id** (`harbor.home`),
+not by `/` or `/u/{id}`. The registry is the router.
 
 <CodeBlock
   lang="kotlin"
@@ -58,13 +22,24 @@ pages DSL is sugar: register path + loader, then on match call `respondPage`.
         title = "Harbor"
         notFoundPageId = "harbor.notFound"
         pages {
-            page<HomePage>("harbor.home", "/") { HomePage(...) }
-            page<UserPage>("harbor.user", "/u/{id}") { ... }
-            page<FormPage>("form", "/form", methods = setOf(PageMethod.GET, PageMethod.POST)) { ... }
+            page<HomePage>("harbor.home", "/") {
+                head("Harbor", description = "An in-memory message board.")
+                HomePage(viewer = Board.viewer(call)?.toRef(), feed = Board.feed())
+            }
+            page<UserPage>("harbor.user", "/u/{id}") {
+                val user = Board.user(params.getValue("id"))
+                    ?: throw PageMissingException(path)
+                head("\${user.displayName} — Harbor")
+                UserPage(user = user.toRef(), messages = Board.messagesFor(user.id))
+            }
         }
     }
 }`}
 />
+
+`respondPage` is the primitive. The pages DSL is sugar: register path +
+loader, then on match call `respondPage`. Any Ktor route can return a Keel
+page.
 
 <CodeBlock
   lang="kotlin"
@@ -82,21 +57,52 @@ pages DSL is sugar: register path + loader, then on match call `respondPage`.
 }`}
 />
 
-`Route.keel` registers the bundle for asset serving and sets a default so
-`respondPage(pageId, data)` can omit the bundle argument. It does not steal
-unmatched paths. The `{path...}` not-found catch-all stays on the
-application-level pages DSL only.
+`Route.keel` registers the bundle and a default so `respondPage(pageId, data)`
+can omit the bundle argument. It does not steal unmatched paths.
 
-## History
+First load is a **document** (HTML shell + seed). Client navigation is a
+**visit**: the same page URL with `X-Keel-Visit: true`, JSON back. Path
+grammar, status codes, and headers live on
+<a href={path("/docs/implementing/protocol")}>the wire protocol</a>.
 
-Successful visits `pushState` the seed. Back/forward re-applies the stored seed
-without a network round-trip unless the entry module changed.
+The pack never invents routes. It visits host URLs:
 
-`replace` swaps the current history entry (login, pack switch). `preserveState`
-on the same page id calls `update()` instead of remounting.
+<CodePair
+  fw="svelte"
+  title="Link and router.visit"
+  ts={`<script lang="ts">
+  import { Link, page, router } from "@kolektiv/keel-svelte"
+  import type { HomePage } from "@app/page-types"
 
-## Why packs must not own paths
+  const ctx = page<HomePage>()
+</script>
 
-If a theme hard-codes `/p/{slug}`, you cannot swap it for a pack that uses the
-same id on a different host path. The id is the contract. The path is
-decoration the host is free to restyle — or version.
+<nav>
+  <Link href="/" prefetch="hover">Harbor</Link>
+  {#each ctx.data.feed as item (item.id)}
+    <Link href={\`/u/\${item.userId}\`}>{item.displayName}</Link>
+  {/each}
+</nav>
+
+<button type="button" onclick={() => router.visit("/settings", { preserveScroll: true })}>
+  Settings
+</button>`}
+  js={`<script>
+  import { Link, page, router } from "@kolektiv/keel-svelte"
+
+  const ctx = page()
+</script>
+
+<nav>
+  <Link href="/" prefetch="hover">Harbor</Link>
+</nav>
+
+<button type="button" onclick={() => router.visit("/settings", { preserveScroll: true })}>
+  Settings
+</button>`}
+/>
+
+`replace` swaps the current history entry (login, pack switch).
+`preserveState` on the same page id calls `update()` instead of remounting.
+Successful visits `pushState` the seed; back/forward re-applies it without a
+round-trip unless the entry module changed.

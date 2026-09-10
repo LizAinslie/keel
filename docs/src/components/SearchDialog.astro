@@ -1,0 +1,208 @@
+---
+import type { SearchDoc } from "../lib/search"
+
+interface Props {
+  index: SearchDoc[]
+}
+
+const { index } = Astro.props
+const suggestions = index.filter((doc) => doc.category === "getting-started").slice(0, 6)
+---
+
+<button
+  type="button"
+  class="btn btn-ghost btn-sm min-h-11 gap-2 px-3"
+  data-search-open
+  aria-haspopup="dialog"
+  aria-controls="keel-search"
+  aria-label="Search docs"
+>
+  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden>
+    <circle cx="11" cy="11" r="7"></circle>
+    <path d="m20 20-3.5-3.5" stroke-linecap="round"></path>
+  </svg>
+  <span class="hidden md:inline">Search</span>
+  <kbd class="kbd kbd-sm hidden lg:inline" data-search-hotkey>Ctrl K</kbd>
+</button>
+
+<dialog id="keel-search" class="modal" aria-label="Search documentation">
+  <div class="modal-box flex max-h-[min(36rem,calc(100dvh-4rem))] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+    <form method="dialog" class="absolute right-3 top-3 z-10">
+      <button type="submit" class="btn btn-ghost btn-square btn-sm" aria-label="Close search">
+        <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden>
+          <path d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      </button>
+    </form>
+    <div class="border-b-2 border-base-300 px-4 py-3 pr-14">
+      <label class="sr-only" for="keel-search-input">Search docs</label>
+      <input
+        id="keel-search-input"
+        class="input input-ghost h-11 w-full px-0 text-base"
+        type="search"
+        placeholder="Search the docs"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        data-search-input
+      />
+    </div>
+    <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2" data-search-results>
+      <p class="px-3 py-2 font-mono text-xs uppercase tracking-widest text-base-content/50">Getting started</p>
+      <ul class="menu menu-sm w-full">
+        {
+          suggestions.map((doc) => (
+            <li>
+              <a href={doc.href} data-search-hit>
+                <span class="flex min-w-0 flex-col gap-0.5">
+                  <span class="font-medium">{doc.title}</span>
+                  <span class="truncate text-xs text-base-content/55">{doc.description}</span>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button type="submit">Close</button>
+  </form>
+</dialog>
+
+<script id="keel-search-index" type="application/json" is:inline set:html={JSON.stringify(index).replace(/</g, "\\u003c")} />
+<script>
+  import { CATEGORY_LABELS, searchDocs, type SearchDoc } from "../lib/search"
+
+  const dialog = document.getElementById("keel-search") as HTMLDialogElement | null
+  const input = document.querySelector<HTMLInputElement>("[data-search-input]")
+  const results = document.querySelector<HTMLElement>("[data-search-results]")
+  const indexNode = document.getElementById("keel-search-index")
+  const index: SearchDoc[] = indexNode?.textContent ? JSON.parse(indexNode.textContent) : []
+  const labels = CATEGORY_LABELS
+
+  let active = -1
+  let hits: SearchDoc[] = []
+
+  function openSearch() {
+    if (!dialog) return
+    dialog.showModal()
+    active = -1
+    if (input) {
+      input.value = ""
+      renderEmpty()
+      window.setTimeout(() => input.focus(), 0)
+    }
+  }
+
+  function closeSearch() {
+    dialog?.close()
+  }
+
+  function renderEmpty() {
+    if (!results) return
+    const starters = index.filter((doc) => doc.category === "getting-started").slice(0, 6)
+    results.innerHTML = `
+      <p class="px-3 py-2 font-mono text-xs uppercase tracking-widest text-base-content/50">Getting started</p>
+      <ul class="menu menu-sm w-full">${starters.map((doc) => itemHtml(doc)).join("")}</ul>
+    `
+    hits = starters
+    active = -1
+  }
+
+  function itemHtml(doc: SearchDoc): string {
+    const category = labels[doc.category] ?? doc.category
+    return `<li>
+      <a href="${doc.href}" data-search-hit>
+        <span class="flex min-w-0 flex-col gap-0.5">
+          <span class="font-medium">${escapeHtml(doc.title)}</span>
+          <span class="truncate text-xs text-base-content/55">${escapeHtml(category)} · ${escapeHtml(doc.description)}</span>
+        </span>
+      </a>
+    </li>`
+  }
+
+  function escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+  }
+
+  function renderHits(query: string) {
+    if (!results) return
+    hits = searchDocs(index, query, 8)
+    if (hits.length === 0) {
+      results.innerHTML = `<p class="px-4 py-8 text-sm text-base-content/60">No pages match “${escapeHtml(query)}”.</p>`
+      active = -1
+      return
+    }
+    results.innerHTML = `<ul class="menu menu-sm w-full">${hits.map((doc) => itemHtml(doc)).join("")}</ul>`
+    active = 0
+    highlight()
+  }
+
+  function highlight() {
+    if (!results) return
+    const items = [...results.querySelectorAll<HTMLAnchorElement>("[data-search-hit]")]
+    items.forEach((el, index) => {
+      el.classList.toggle("menu-active", index === active)
+      if (index === active) el.scrollIntoView({ block: "nearest" })
+    })
+  }
+
+  function go(index: number) {
+    const href = hits[index]?.href
+    if (!href) return
+    closeSearch()
+    window.location.assign(href)
+  }
+
+  document.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement
+    if (target.closest("[data-search-open]")) {
+      event.preventDefault()
+      openSearch()
+    }
+  })
+
+  document.addEventListener("keydown", (event) => {
+    const inField = event.target instanceof HTMLElement && event.target.matches("input, textarea, select, [contenteditable=true]")
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault()
+      if (dialog?.open) closeSearch()
+      else openSearch()
+      return
+    }
+    if (event.key === "/" && !inField && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      event.preventDefault()
+      openSearch()
+      return
+    }
+    if (!dialog?.open) return
+    if (event.key === "ArrowDown") {
+      event.preventDefault()
+      if (hits.length === 0) return
+      active = (active + 1) % hits.length
+      highlight()
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault()
+      if (hits.length === 0) return
+      active = (active - 1 + hits.length) % hits.length
+      highlight()
+    } else if (event.key === "Enter" && active >= 0) {
+      event.preventDefault()
+      go(active)
+    }
+  })
+
+  input?.addEventListener("input", () => {
+    const query = input.value
+    if (!query.trim()) renderEmpty()
+    else renderHits(query)
+  })
+
+  const hotkey = document.querySelector("[data-search-hotkey]")
+  if (hotkey && /Mac|iPhone|iPad/.test(navigator.platform)) hotkey.textContent = "⌘K"
+</script>

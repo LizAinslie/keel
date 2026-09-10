@@ -3,7 +3,6 @@ import Base from "./Base.astro"
 import Navbar from "../components/Navbar.astro"
 import Footer from "../components/Footer.astro"
 import DocsSidebar from "../components/DocsSidebar.astro"
-import FrameworkBar from "../components/FrameworkBar.astro"
 import Mark from "../components/Mark.astro"
 import { allDocs } from "../lib/docs"
 import { path } from "../lib/paths"
@@ -23,18 +22,8 @@ const entries = await allDocs()
     <input id="docs-drawer" type="checkbox" class="drawer-toggle" />
     <div class="drawer-content flex min-h-dvh flex-col">
       <Navbar hideBrandOnDesktop drawerId="docs-drawer" />
-      <div class="sticky top-16 z-20 border-b border-base-300 bg-base-100/90 backdrop-blur-sm px-4 sm:px-6">
-        <div class="mx-auto max-w-3xl">
-          <FrameworkBar compact />
-        </div>
-      </div>
       <main id="main" class="flex-1 px-4 py-8 sm:px-8 lg:px-10">
         <div class="mx-auto max-w-3xl">
-          <div class="alert mb-8 border border-base-300 bg-base-200" data-fw="react">
-            <span class="text-sm">
-              React examples are sketched against the same router. <code class="font-mono text-xs">@kolektiv/keel-react</code> is not published yet.
-            </span>
-          </div>
           <slot />
         </div>
       </main>
@@ -42,7 +31,7 @@ const entries = await allDocs()
     </div>
     <div class="drawer-side z-40">
       <label for="docs-drawer" class="drawer-overlay" aria-label="Close docs menu"></label>
-      <aside class="flex min-h-dvh w-72 flex-col bg-base-200">
+      <aside class="flex h-dvh w-72 flex-col overflow-hidden bg-base-200">
         <a href={path("/")} class="flex items-stretch gap-3 px-5 py-5 border-b border-base-300">
           <span class="aspect-square self-stretch">
             <Mark class="w-16 h-16" />
@@ -52,7 +41,25 @@ const entries = await allDocs()
             <span class="mt-1 font-mono text-[0.65rem] font-medium uppercase tracking-[0.18em] text-base-content/70">Documentation</span>
           </span>
         </a>
-        <DocsSidebar entries={entries} currentId={currentId} />
+        <div class="px-3 py-3 border-b border-base-300">
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm min-h-10 w-full justify-start gap-2 font-normal text-base-content/70"
+            data-search-open
+            aria-haspopup="dialog"
+            aria-controls="keel-search"
+          >
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden>
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-3.5-3.5" stroke-linecap="round"></path>
+            </svg>
+            Search docs
+            <kbd class="kbd kbd-sm ml-auto hidden sm:inline">Ctrl K</kbd>
+          </button>
+        </div>
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          <DocsSidebar entries={entries} currentId={currentId} />
+        </div>
       </aside>
     </div>
   </div>

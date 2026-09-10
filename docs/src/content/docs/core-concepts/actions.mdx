@@ -13,10 +13,7 @@ import CodePair from "../../../components/CodePair.astro"
 Actions are typed RPC. They are not pages. They are not a second read model.
 
 The host writes a Kotlin function: one `@Serializable` input, one
-`@Serializable` output. Annotate the types with `@KeelType` and the function
-with `@KeelAction`. Ktor binds `POST /__keel/action/{id}`, decodes JSON, runs
-the function, and encodes the result. Gradle `generateKeelTypes` walks the
-same annotations Typegen uses for the pack `.d.ts`.
+`@Serializable` output. Ktor binds `POST /__keel/action/{id}`.
 
 <CodeBlock
   lang="kotlin"
@@ -33,8 +30,14 @@ data class SetNameOut(val user: UserRef)
 object Board {
     @KeelAction("harbor.setName")
     fun ApplicationCall.setName(input: SetNameIn): SetNameOut {
-        val existing = viewer(this)
+        val trimmed = input.displayName.trim()
+        if (trimmed.length < 2) {
+            throw PageValidationException(
+                mapOf("displayName" to listOf("Display name must be 2 to 40 characters.")),
+            )
+        }
         // ...
+        return SetNameOut(user.toRef())
     }
 }
 
@@ -45,17 +48,11 @@ keel {
 
 Make the function an extension on `ApplicationCall` when it needs cookies or
 session; `this` is the current request. Validation throws
-`PageValidationException` and becomes **422** `{ "errors": { … } }` — not a
-page seed. Success is **200** `{ "data": … }`. Unknown ids are **404**.
-The `actions { action<In, Out>(id) { } }` DSL is still available when you want
-the handler inline.
+`PageValidationException` and becomes **422** `{ "errors": { … } }`. Success
+is **200** `{ "data": … }`. CSRF and status codes are on
+<a href={path("/docs/implementing/protocol")}>the wire protocol</a>.
 
-Writes are CSRF-protected: `Content-Type: application/json` or
-`X-Keel-Visit`, plus a same-origin `Origin` / `Sec-Fetch-Site` (or an
-allowlisted origin). A blocked write is **403** `{ "errors": { "csrf": […] } }`.
-See <a href={path("/docs/implementing/protocol")}>the wire protocol</a>.
-
-The pack never invents a URL. It calls the id:
+The pack calls the id — never a URL it invented:
 
 <CodePair
   fw="svelte"
@@ -72,9 +69,50 @@ const out = await action("harbor.setName", {
 })`}
 />
 
-`@kolektiv/keel-svelte` wraps that in `useAction(id)` so a mutation can
-invalidate the current page. See
-<a href={path("/docs/advanced/query")}>Mutate and rehydrate</a>.
+`useAction(id)` wraps that in a mutation that reloads the current seed:
+
+<CodePair
+  fw="svelte"
+  title="useAction"
+  ts={`<script lang="ts">
+  import { ActionError, page, useAction } from "@kolektiv/keel-svelte"
+  import type { HomePage, SetNameIn, SetNameOut } from "@app/page-types"
+
+  const ctx = page<HomePage>()
+  const setName = useAction<SetNameIn, SetNameOut>("harbor.setName")
+  let displayName = $state(ctx.data.viewer?.displayName ?? "")
+
+  function onSetName(event: SubmitEvent) {
+    event.preventDefault()
+    void setName.mutateAsync({ displayName }).catch(() => undefined)
+  }
+</script>
+
+<form onsubmit={onSetName}>
+  <input bind:value={displayName} />
+  {#if setName.error instanceof ActionError}
+    <p>{setName.error.errors.displayName?.join(" ")}</p>
+  {/if}
+  <button type="submit" disabled={setName.isPending}>Save</button>
+</form>`}
+  js={`<script>
+  import { ActionError, page, useAction } from "@kolektiv/keel-svelte"
+
+  const ctx = page()
+  const setName = useAction("harbor.setName")
+  let displayName = $state(ctx.data.viewer?.displayName ?? "")
+
+  function onSetName(event) {
+    event.preventDefault()
+    void setName.mutateAsync({ displayName }).catch(() => undefined)
+  }
+</script>
+
+<form onsubmit={onSetName}>
+  <input bind:value={displayName} />
+  <button type="submit" disabled={setName.isPending}>Save</button>
+</form>`}
+/>
 
 Typegen emits the in/out types next to the page map:
 
@@ -86,8 +124,10 @@ export interface HarborActions {
 export type HarborActionId = keyof HarborActions
 ```
 
+See <a href={path("/docs/advanced/query")}>Mutate and rehydrate</a> for the
+invalidation rule.
+
 <Callout title="Writes, not reads">
-  Packs must not `fetch` a second JSON source for page data. After an action
-  succeeds, visit the current URL and rehydrate from the seed. That is the
-  only read model.
+  Packs must not <code>fetch</code> a second JSON source for page data. After
+  an action succeeds, visit the current URL and rehydrate from the seed.
 </Callout>

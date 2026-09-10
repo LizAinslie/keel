@@ -1,9 +1,11 @@
 ---
 import LangToggle from "./LangToggle.astro"
 import ThemePicker from "./ThemePicker.astro"
-import CodeThemePicker from "./CodeThemePicker.astro"
+import ScmMenu from "./ScmMenu.astro"
+import SearchDialog from "./SearchDialog.astro"
 import Mark from "./Mark.astro"
 import { path, isDocsPath } from "../lib/paths"
+import { searchIndex } from "../lib/docs"
 
 interface Props {
   hideBrandOnDesktop?: boolean
@@ -15,6 +17,7 @@ const docsActive = isDocsPath(Astro.url.pathname)
 const brandClass = hideBrandOnDesktop
   ? "flex items-center gap-3 min-h-11 lg:hidden"
   : "flex items-center gap-3 min-h-11"
+const index = await searchIndex()
 ---
 
 <div class="navbar sticky top-0 z-30 border-b-2 border-base-300 bg-base-100/90 backdrop-blur-sm min-h-16 px-3 sm:px-6">
@@ -41,12 +44,13 @@ const brandClass = hideBrandOnDesktop
   </div>
   <div class="navbar-end gap-1">
     <a href={path("/docs")} class:list={["btn btn-ghost btn-sm sm:hidden", docsActive && "btn-active"]}>Docs</a>
+    <SearchDialog index={index} />
     {docsActive && (
-      <div class="hidden xs:block">
+      <div class="hidden sm:block">
         <LangToggle />
       </div>
     )}
-    <CodeThemePicker />
+    <ScmMenu />
     <ThemePicker />
   </div>
 </div>

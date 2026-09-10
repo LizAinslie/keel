@@ -1,7 +1,6 @@
 ---
 import ShikiCode from "./ShikiCode.astro"
 import LangToggle from "./LangToggle.astro"
-import CodeThemePicker from "./CodeThemePicker.astro"
 
 interface FileSnippet {
   title: string
@@ -45,7 +44,6 @@ const initial = frameworks[0]?.id ?? "svelte"
           </select>
         )}
         <div class="ml-auto flex items-center gap-1">
-          <CodeThemePicker id="keel-code-theme-deck" compact />
           <button type="button" class="btn btn-ghost btn-xs min-h-8" data-copy>
             Copy
           </button>
@@ -74,7 +72,7 @@ const initial = frameworks[0]?.id ?? "svelte"
             ))}
           </div>
           {overlay && (
-            <div class="ml-auto flex items-center gap-1">
+            <div class="ml-auto hidden items-center gap-1 lg:flex">
               {frameworks.length > 1 && (
                 <select class="select min-h-11 lg:select-xs lg:min-h-8" data-local-framework aria-label="Frontend framework">
                   {frameworks.map((item) => (
@@ -109,15 +107,15 @@ const initial = frameworks[0]?.id ?? "svelte"
                     <LangToggle scope="block" />
                   </div>
                 )}
-                <div data-lang-panel="ts" class:list={[overlay && "max-h-64 overflow-auto lg:h-36 lg:max-h-none"]}>
+                <div data-lang-panel="ts" class:list={[overlay && "overflow-auto lg:h-36"]}>
                   <ShikiCode code={file.ts} lang="ts" />
                 </div>
-                <div data-lang-panel="js" class:list={[overlay && "max-h-64 overflow-auto lg:h-36 lg:max-h-none"]}>
+                <div data-lang-panel="js" class:list={[overlay && "overflow-auto lg:h-36"]}>
                   <ShikiCode code={file.js ?? file.ts} lang="js" />
                 </div>
               </>
             ) : (
-              <div class:list={[overlay && "max-h-64 overflow-auto lg:h-36 lg:max-h-none"]}>
+              <div class:list={[overlay && "overflow-auto lg:h-36"]}>
                 <ShikiCode code={file.code ?? ""} lang={file.lang ?? "ts"} />
               </div>
             )}

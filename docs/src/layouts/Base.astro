@@ -16,7 +16,9 @@ const {
 const pageTitle = title === "Keel" ? "Keel" : `${title} · Keel`
 const docs = await allDocs()
 const previewPaths = [path("/"), path("/docs"), ...docs.map((entry) => path(`/docs/${entry.id}`))]
-const pageUrl = new URL(path("/").replace(/^\//, ""), Astro.site ?? "http://localhost:8080/").href
+const site = Astro.site ?? new URL("http://localhost:8080/")
+const pageUrl = new URL(Astro.url.pathname, site).href
+const ogImage = new URL(path("/logo.svg"), site).href
 ---
 
 <!doctype html>
@@ -35,13 +37,22 @@ const pageUrl = new URL(path("/").replace(/^\//, ""), Astro.site ?? "http://loca
     <meta name="description" content={description} />
     <meta name="theme-color" content="#1e1e2e" />
     <title>{pageTitle}</title>
+    <link rel="canonical" href={pageUrl} />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Keel" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={pageUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="1024" />
+    <meta property="og:image:alt" content="Keel" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content="Keel" />
     <link rel="icon" type="image/svg+xml" href={path("/favicon.svg")} />
     <link rel="apple-touch-icon" href={path("/logo.svg")} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -62,14 +73,12 @@ const pageUrl = new URL(path("/").replace(/^\//, ""), Astro.site ?? "http://loca
                 : stored || "catppuccin-mocha"
           const codeTheme = localStorage.getItem("keel:code-theme") || "follow"
           const lang = localStorage.getItem("keel:lang") || "ts"
-          const frontend = localStorage.getItem("keel:frontend") || "svelte"
-          const backend = localStorage.getItem("keel:backend") || "ktor"
           const root = document.documentElement
           root.setAttribute("data-theme", theme)
           root.dataset.codeTheme = codeTheme
           root.dataset.lang = lang
-          root.dataset.frontend = frontend
-          root.dataset.backend = backend
+          root.dataset.frontend = "svelte"
+          root.dataset.backend = "ktor"
         } catch {}
       })()
     </script>

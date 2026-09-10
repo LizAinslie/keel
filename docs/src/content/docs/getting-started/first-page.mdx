@@ -62,34 +62,6 @@ Folders are id segments. They are not routes.
 <h1>{ctx.data.greeting}</h1>`}
 />
 
-<CodePair
-  fw="react"
-  title="pages/home.tsx"
-  ts={`import { Head, usePage } from "@kolektiv/keel-react"
-import type { HomePage } from "@app/page-types"
-
-export function Home() {
-  const { data } = usePage<HomePage>()
-  return (
-    <>
-      <Head />
-      <h1>{data.greeting}</h1>
-    </>
-  )
-}`}
-  js={`import { Head, usePage } from "@kolektiv/keel-react"
-
-export function Home() {
-  const { data } = usePage()
-  return (
-    <>
-      <Head />
-      <h1>{data.greeting}</h1>
-    </>
-  )
-}`}
-/>
-
 `<Head />` reads `page().head` — the same tags the host already wrote into the
 document for crawlers. Pass `title` only to override. See
 <a href={path("/docs/core-concepts/head")}>Document head and SEO</a>.
@@ -97,5 +69,5 @@ document for crawlers. Pass `title` only to override. See
 Bootstrap reads `#__keel_seed`, imports `entry`, and calls `mount(host, ctx)`.
 The adapter generates that wrapper so you write ordinary components.
 
-Use the TS/JS toggle on the block itself to pin a snippet, or the global
-language control in the bar to switch every example that has not been pinned.
+Use the TS/JS toggle on the block itself to pin a snippet, or the language
+control in the navbar to switch every example that has not been pinned.

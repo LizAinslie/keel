@@ -9,53 +9,42 @@ import Callout from "../../../components/Callout.astro"
 import CodeBlock from "../../../components/CodeBlock.astro"
 import CodePair from "../../../components/CodePair.astro"
 
-The host registry is the contract. Each entry is a **stable page id**, a
-**payload type**, and a **path the host owns**. Packs implement ids. They never
-own URLs.
+The host registry is the contract: a **stable page id**, a **payload type**,
+and a **path the host owns**. Packs implement ids. They never own URLs.
 
-That is the whole library. How many packs you install is a deployment choice.
-
-- **One pack** — you are hosting a web UI. Register the pages, write one
-  Svelte (or React) frontend, ship it. Keel glues routes, seeds, and visits.
-- **Many packs** — you are hosting an app that authors theme. Publish the
-  contract (ids + serializers). Installed themes compile against those types
-  and provide the page ids the app expects.
+One pack is your app UI. Many packs are installed themes against the same
+types. Same API either way.
 
 ```kotlin
+@KeelType("harbor.home")
 @Serializable
-data class BlogHomePage(val featured: List<PostSummary>)
+data class HomePage(
+    val viewer: UserRef?,
+    val feed: List<FeedItem>,
+)
 
+@KeelType("harbor.user")
 @Serializable
-data class BlogListPage(val posts: List<PostSummary>, val page: Int)
-
-@Serializable
-data class BlogPostPage(
-    val title: String,
-    val slug: String,
-    val body: String,
-    val publishedAt: Instant,
+data class UserPage(
+    val user: UserRef,
+    val messages: List<FeedItem>,
 )
 
 pages {
-    page<BlogHomePage>("blog.home", "/") { BlogHomePage(posts.featured()) }
-    page<BlogListPage>("blog.list", "/posts") { call ->
-        BlogListPage(posts.page(call.parameters["page"]?.toIntOrNull() ?: 1))
-    }
-    page<BlogPostPage>("blog.post", "/p/{slug}") { call ->
-        BlogPostPage(posts.bySlug(call.parameters.getOrFail("slug")))
+    page<HomePage>("harbor.home", "/") { HomePage(Board.viewer(call)?.toRef(), Board.feed()) }
+    page<UserPage>("harbor.user", "/u/{id}") { call ->
+        UserPage(Board.user(params.getValue("id"))!!.toRef(), Board.messagesFor(params.getValue("id")))
     }
 }
 ```
 
-Typegen walks `@KeelType` / `@KeelAction` (and still accepts a `PageRegistry`)
-and emits `.d.ts`. Hosts run Gradle `generateKeelTypes` from the `keel.typegen`
-plugin. Theme authors depend on that file — or on a published `blog-contract`
-module — not on your running server. Paths are host-only and optional for
-pages that are only ever returned from custom Ktor routes. Pack authors never
-see paths.
+Typegen walks `@KeelType` / `@KeelAction` and emits `.d.ts` plus JSON.
+Gradle `generateKeelTypes` is the offline scan. Theme authors depend on that
+file — not on your running server.
 
 ```ts
 export interface HomePage { viewer: UserRef | null; feed: FeedItem[] }
+export interface UserPage { user: UserRef; messages: FeedItem[] }
 export interface HarborPages {
   "harbor.home": HomePage
   "harbor.user": UserPage
@@ -69,63 +58,64 @@ export interface HarborActions {
 }
 ```
 
-The map is named `Pages` by default. Publish this file for theme authors.
+A Svelte page is keyed by id. `pages/harbor/home/+page.svelte` implements
+`harbor.home`.
 
 <CodePair
   fw="svelte"
-  title="pages/blog.post.svelte"
+  title="pages/harbor/home/+page.svelte"
   ts={`<script lang="ts">
-  import { Link, page } from "@kolektiv/keel-svelte"
-  import type { BlogPostPage } from "@app/page-types"
+  import { Head, Link, page } from "@kolektiv/keel-svelte"
+  import type { HomePage } from "../../../lib/page-types"
 
-  const ctx = page<BlogPostPage>()
+  const ctx = page<HomePage>()
 </script>
 
-<article>
-  <p><Link href="/posts">All posts</Link></p>
-  <h1>{ctx.data.title}</h1>
-  <time>{ctx.data.publishedAt}</time>
-</article>`}
+<Head />
+<h1>Harbor</h1>
+{#each ctx.data.feed as item (item.id)}
+  <p>
+    <Link href={\`/u/\${item.userId}\`}>{item.displayName}</Link>
+    {item.body}
+  </p>
+{/each}`}
   js={`<script>
-  import { Link, page } from "@kolektiv/keel-svelte"
+  import { Head, Link, page } from "@kolektiv/keel-svelte"
 
   const ctx = page()
 </script>
 
-<article>
-  <p><Link href="/posts">All posts</Link></p>
-  <h1>{ctx.data.title}</h1>
-</article>`}
+<Head />
+<h1>Harbor</h1>
+{#each ctx.data.feed as item (item.id)}
+  <p>
+    <Link href={\`/u/\${item.userId}\`}>{item.displayName}</Link>
+    {item.body}
+  </p>
+{/each}`}
 />
 
-A pack declares which ids it implements. A blog theme that omits `blog.list`
-is still valid — the host skips it for that id and walks the chain. An app
-pack usually implements every id in the registry.
+A pack declares which ids it implements. Omitting `harbor.user` is valid —
+the host skips that pack for that id and walks the chain.
 
 <CodeBlock
   lang="json"
-  title="linen/manifest.json"
+  title="harbor/manifest.json"
   code={`{
   "format": "keel/1",
-  "id": "linen",
-  "version": "1.0.0",
+  "id": "harbor",
+  "version": "0.1.0",
   "framework": "svelte",
   "pages": {
-    "blog.home": {
-      "module": "pages/home.js"
-    },
-    "blog.list": {
-      "module": "pages/list.js"
-    },
-    "blog.post": {
-      "module": "pages/post.js"
-    }
+    "harbor.home": { "module": "pages/harbor.home.js" },
+    "harbor.user": { "module": "pages/harbor.user.js" },
+    "harbor.notFound": { "module": "pages/harbor.notFound.js" }
   }
 }`}
 />
 
 <Callout title="The contract is Kotlin">
-  Authors do not invent page ids. If the app expects `blog.post`, a pack that
-  ships `post` or `/p/{slug}` does not match. Typed data is the second half of
-  the contract: change `BlogPostPage` and typegen fails the theme at build.
+  Authors do not invent page ids. If the app expects <code>harbor.home</code>,
+  a pack that ships <code>home</code> or <code>/</code> does not match. Change
+  <code>HomePage</code> and typegen fails the theme at build.
 </Callout>

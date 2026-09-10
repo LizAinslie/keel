@@ -1,0 +1,42 @@
+---
+const id = "keel-scm-pop"
+const anchor = "--keel-scm"
+const repos = [
+  { href: "https://github.com/LizAinslie/keel", label: "GitHub", hint: "github.com/LizAinslie/keel" },
+  { href: "https://git.yuri.capital/kolektiv/keel", label: "yuri.capital", hint: "git.yuri.capital/kolektiv/keel" },
+]
+---
+
+<button
+  type="button"
+  class="btn btn-ghost btn-square btn-sm min-h-11 min-w-11"
+  popovertarget={id}
+  style={`anchor-name:${anchor}`}
+  aria-label="Source code"
+  title="Source"
+>
+  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden>
+    <path d="M6 3v12" stroke-linecap="round"></path>
+    <circle cx="6" cy="18" r="3"></circle>
+    <circle cx="18" cy="6" r="3"></circle>
+    <path d="M18 9v3.5a2.5 2.5 0 0 1-2.5 2.5H9" stroke-linecap="round"></path>
+  </svg>
+</button>
+<ul
+  popover
+  id={id}
+  class="dropdown dropdown-end dropdown-bottom menu menu-sm bg-base-100 rounded-box w-64 border-2 border-base-300 p-2 shadow-lg"
+  style={`position-anchor:${anchor}`}
+>
+  <li class="menu-title">Source</li>
+  {
+    repos.map((repo) => (
+      <li>
+        <a href={repo.href} target="_blank" rel="noreferrer" class="flex flex-col items-start gap-0.5 py-2">
+          <span class="font-medium">{repo.label}</span>
+          <span class="font-mono text-[0.65rem] tracking-wide text-base-content/55">{repo.hint}</span>
+        </a>
+      </li>
+    ))
+  }
+</ul>

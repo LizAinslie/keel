@@ -18,7 +18,7 @@ Many packs are installed themes against the same typed contract.
 | `packages/svelte` | `@kolektiv/keel-svelte` — `Link`, `Form`, `Head`, `page()`, `useForm`, `useAction` |
 | `packages/pack` | `@kolektiv/keel-pack` — `.feb` zip, Vite plugin, `keel-scaffold` |
 | `skills/` | Agent Skills (`keel-host`, `keel-pack`, `keel-scaffold`) for Claude / Grok / `.agents` |
-| `docs/` | Homepage and guides (Astro 7, Tailwind 4, daisyUI 5, Shiki Catppuccin). pnpm workspace package `@kolektiv/keel-docs`. Getting started splits **Server Installation** and **Client Setup**. |
+| `docs/` | Homepage and guides (Astro 7, Tailwind 4, daisyUI 5, Shiki Catppuccin). pnpm workspace package `@kolektiv/keel-docs`. Getting started splits **Server Installation** and **Client Setup**. Search, SCM links, and a combined theme popup live in the site chrome. |
 | `buildSrc/` | Gradle conventions (JVM 17, Maven publish) |
 | `public/` | `logo.svg` / `favicon.svg` product mark, `mark.svg` hull glyph. `.idea/icon.svg` is the same mark as the IntelliJ project icon. |
 
@@ -61,16 +61,15 @@ JS workspace root is this repository (`packages/*` and `docs`).
   source of truth or own URL patterns.
 - One pack and many packs use the same host API. A single-pack app is a theme
   chain of one.
-- First adapter is Svelte 5. React snippets in the docs are sketched against
-  the same router.
+- First adapter is Svelte 5.
 
 ## Docs site
 
 Catppuccin daisyUI themes (`catppuccin-mocha` default). Type: Source Serif 4
 (display), Source Sans 3 (body / UI), Iosevka (code) in
 `docs/src/styles/global.css`. Site chrome uses daisyUI
-primitives. Code samples: Svelte first, Ktor host. Framework and TS/JS
-selectors live on docs pages only.
+primitives. Code samples: Svelte, Ktor host. TS/JS toggles live on docs pages
+and on individual snippets.
 
 Production docs are `https://keel.mey.cat` (GitHub Pages custom domain, site
 root). All in-app links must go through `path()` in `docs/src/lib/paths.ts`

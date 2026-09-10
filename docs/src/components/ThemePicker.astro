@@ -1,8 +1,8 @@
 ---
-import { SITE_THEMES } from "../lib/themes"
+import { CODE_THEMES, SITE_THEMES } from "../lib/themes"
 
-const id = "keel-site-theme-pop"
-const anchor = "--keel-site-theme"
+const id = "keel-theme-pop"
+const anchor = "--keel-theme"
 ---
 
 <button
@@ -10,36 +10,56 @@ const anchor = "--keel-site-theme"
   class="btn btn-ghost btn-sm min-h-11 gap-2 px-3"
   popovertarget={id}
   style={`anchor-name:${anchor}`}
-  aria-label="Site theme"
+  aria-label="Theme"
+  title="Theme"
 >
   <span class="size-2.5 rounded-full bg-primary" aria-hidden></span>
   <span data-theme-current class="hidden sm:inline">Mocha</span>
 </button>
-<ul
+<div
   popover
   id={id}
-  class="dropdown dropdown-end dropdown-bottom menu menu-sm bg-base-100 rounded-box w-52 border-2 border-base-300 p-2 shadow-lg"
+  class="dropdown dropdown-end dropdown-bottom bg-base-100 rounded-box w-56 border-2 border-base-300 p-2 shadow-lg"
   style={`position-anchor:${anchor}`}
 >
-  <li class="menu-title">Site theme</li>
-  {
-    SITE_THEMES.map((theme) => (
-      <li>
-        <label class="flex cursor-pointer items-center gap-2">
-          <input
-            type="radio"
-            name="keel-site-theme"
-            class="radio radio-xs radio-primary"
-            data-pref="theme"
-            value={theme.id}
-          />
-          <span
-            class="size-3 rounded-full border border-base-content/20"
-            style={`background:${theme.swatch}`}
-          ></span>
-          {theme.label}
-        </label>
-      </li>
-    ))
-  }
-</ul>
+  <ul class="menu menu-sm w-full p-0">
+    <li class="menu-title">Site theme</li>
+    {
+      SITE_THEMES.map((theme) => (
+        <li>
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              name="keel-site-theme"
+              class="radio radio-xs radio-primary"
+              data-pref="theme"
+              value={theme.id}
+            />
+            <span
+              class="size-3 rounded-full border border-base-content/20"
+              style={`background:${theme.swatch}`}
+            ></span>
+            {theme.label}
+          </label>
+        </li>
+      ))
+    }
+    <li class="menu-title mt-2">Code theme</li>
+    {
+      CODE_THEMES.map((theme) => (
+        <li>
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              name="keel-code-theme"
+              class="radio radio-xs radio-primary"
+              data-pref="codeTheme"
+              value={theme.id}
+            />
+            {theme.label}
+          </label>
+        </li>
+      ))
+    }
+  </ul>
+</div>

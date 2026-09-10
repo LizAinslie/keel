@@ -11,28 +11,20 @@ export const PREF_KEYS = {
   theme: "keel:theme",
   codeTheme: "keel:code-theme",
   lang: "keel:lang",
-  frontend: "keel:frontend",
-  backend: "keel:backend",
 } as const
 
 export type LangName = "ts" | "js"
-export type FrontendName = "svelte" | "react"
-export type BackendName = "ktor" | "soon"
 
 export type Prefs = {
   theme: SiteTheme
   codeTheme: CodeTheme
   lang: LangName
-  frontend: FrontendName
-  backend: BackendName
 }
 
 export const DEFAULTS: Prefs = {
   theme: DEFAULT_SITE_THEME,
   codeTheme: DEFAULT_CODE_THEME,
   lang: "ts",
-  frontend: "svelte",
-  backend: "ktor",
 }
 
 function pick<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
@@ -46,8 +38,6 @@ export function readPrefs(): Prefs {
     theme: migrateSiteTheme(localStorage.getItem(PREF_KEYS.theme)),
     codeTheme: isCodeTheme(codeTheme) ? codeTheme : DEFAULTS.codeTheme,
     lang: pick(localStorage.getItem(PREF_KEYS.lang), ["ts", "js"] as const, DEFAULTS.lang),
-    frontend: pick(localStorage.getItem(PREF_KEYS.frontend), ["svelte", "react"] as const, DEFAULTS.frontend),
-    backend: pick(localStorage.getItem(PREF_KEYS.backend), ["ktor", "soon"] as const, DEFAULTS.backend),
   }
 }
 
@@ -57,13 +47,11 @@ export function applyPrefs(prefs: Partial<Prefs>): void {
   root.setAttribute("data-theme", next.theme)
   root.dataset.codeTheme = next.codeTheme
   root.dataset.lang = next.lang
-  root.dataset.frontend = next.frontend
-  root.dataset.backend = next.backend
+  root.dataset.frontend = "svelte"
+  root.dataset.backend = "ktor"
   localStorage.setItem(PREF_KEYS.theme, next.theme)
   localStorage.setItem(PREF_KEYS.codeTheme, next.codeTheme)
   localStorage.setItem(PREF_KEYS.lang, next.lang)
-  localStorage.setItem(PREF_KEYS.frontend, next.frontend)
-  localStorage.setItem(PREF_KEYS.backend, next.backend)
   document.dispatchEvent(new CustomEvent("keel:prefs", { detail: next }))
 }
 

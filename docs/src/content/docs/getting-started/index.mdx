@@ -16,17 +16,16 @@ that implements those ids.
 You always do the same two things: declare a contract on the host, then mount
 packs that implement it.
 
-**Glue an app.** Register pages, write one Svelte (or React) frontend, ship
-that pack. Keel is the router between Ktor and the UI — visits, seeds, forms —
-without a client-side router owning the URL.
+**Glue an app.** Register pages, write one Svelte frontend, ship that pack.
+Keel is the router between Ktor and the UI — visits, seeds, forms — without
+a client-side router owning the URL.
 
 **Install themes.** Keep the same registry. Publish the page ids and
 serializers as the contract. Authors pick from packs installed on the app;
 each pack is typed for that data and provides the ids the host expects.
 Visitors never store a theme. The host does.
 
-The first host is Ktor. The first adapter is Svelte 5. React is next — same
-router, different bindings.
+The first host is Ktor. The first adapter is Svelte 5.
 
 Walkthrough: <a href={path("/docs/getting-started/server")}>server</a> →
 <a href={path("/docs/getting-started/client")}>client</a> →
@@ -38,7 +37,7 @@ Walkthrough: <a href={path("/docs/getting-started/server")}>server</a> →
 
 - **Keel** — product, CLI, Maven group `dev.kolektiv.keel`
 - **Pack** — a versioned frontend (`.feb` zip + manifest) keyed by page id, not path
-- **Adapter** — `mount` / `unmount` / `update` for a framework (Svelte, later React)
+- **Adapter** — `mount` / `unmount` / `update` for a framework (Svelte today)
 
 ## What the host does
 

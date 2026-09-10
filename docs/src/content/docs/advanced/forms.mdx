@@ -44,28 +44,5 @@ comment.post("/p/hello/comments", {
 </Form>`}
 />
 
-<CodePair
-  fw="react"
-  title="useForm"
-  ts={`const comment = useForm({ body: "" })
-
-function onSubmit(event: FormEvent) {
-  event.preventDefault()
-  void comment.post("/p/hello/comments", {
-    preserveScroll: true,
-    onSuccess: () => comment.reset(),
-  })
-}`}
-  js={`const comment = useForm({ body: "" })
-
-function onSubmit(event) {
-  event.preventDefault()
-  void comment.post("/p/hello/comments", {
-    preserveScroll: true,
-    onSuccess: () => comment.reset(),
-  })
-}`}
-/>
-
 `preserveScroll: "errors"` restores scroll only when the seed has errors.
 `preserveState` keeps the module mounted so field focus survives the round-trip.

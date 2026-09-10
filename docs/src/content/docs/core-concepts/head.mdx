@@ -10,21 +10,12 @@ import Callout from "../../../components/Callout.astro"
 import CodeBlock from "../../../components/CodeBlock.astro"
 import CodePair from "../../../components/CodePair.astro"
 
-Keel is an MPA shell plus JSON visits. That split is what SEO cares about.
+Crawlers and share bots **GET the real host URL**. That document is the SEO
+unit. A visit (`X-Keel-Visit`) is `pushState` plus JSON — social crawlers do
+not run JS.
 
-- Crawlers and share bots **GET the real host URL** (`/`, `/u/{id}`). That is
-  the SEO unit. Pack file trees are ids, not routes — they never appear as
-  client-only paths.
-- A **visit** (`X-Keel-Visit`) is `pushState` plus JSON. Crawlers do not do
-  that. Client `<Head>` helps JS-executing crawlers (Google) and in-app title
-  updates. Social crawlers (Open Graph, Twitter, Slack) **do not run JS**.
-- The document body is an empty `#__keel_root` until the pack mounts. Full
-  HTML of the Svelte tree on the JVM is out of scope: Ktor cannot execute pack
-  modules.
-
-The host therefore writes indexable tags from `seed.head` into the document:
-`<title>`, description, canonical, `og:*`, Twitter, and a small JSON-LD
-`WebPage`. Loaders set that head when they return data.
+Set `head` in the loader. `respondPage` writes it into the HTML shell
+(`<title>`, description, canonical, `og:*`).
 
 <CodeBlock
   lang="kotlin"
@@ -41,14 +32,11 @@ The host therefore writes indexable tags from `seed.head` into the document:
 }`}
 />
 
-`PageRequest.head(...)` stores the value on the request. `respondPage` reads
-it after the loader returns, so `page<T> { T }` stays a data return. Canonical
-defaults to the document URL.
+`PageRequest.head(...)` stores the value on the request. Canonical defaults
+to the document URL.
 
-The Svelte (and later React) `<Head>` **reads the same `page().head`**. Visits
-stay in sync without a second meta system in the pack. Props override the
-seed. Extra `<meta>` children remain client-only — fine for tags that are not
-the SEO document.
+Svelte `<Head>` reads the same `page().head`, so visits stay in sync. Props
+override the seed. Extra `<meta>` children are client-only.
 
 <CodePair
   fw="svelte"
@@ -72,13 +60,11 @@ the SEO document.
 <h1>{ctx.data.user.displayName}</h1>`}
 />
 
-A document GET of `/u/{id}` contains the display name in `<title>` and
-description **without executing JavaScript**. That is the test that matters
-for share bots.
+A document GET of `/u/{id}` contains the display name in `<title>` **without
+executing JavaScript**. That is the test that matters for share bots.
 
 <Callout title="Do not author head in the pack for SEO">
-  `export function head(data)` that the server would run needs a JS runtime in
-  Ktor. There is none. Present `seed.head`. See
+  There is no JS runtime in Ktor. Present <code>seed.head</code>. See
   <a href={path("/docs/core-concepts/seed")}>Seed and headers</a> for the JSON
   shape.
 </Callout>

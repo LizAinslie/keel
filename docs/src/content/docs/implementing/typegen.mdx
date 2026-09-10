@@ -74,11 +74,11 @@ pnpm exec keel-scaffold 127.0.0.1:8090 ./pack
 pnpm exec keel-scaffold example.com ./theme --id midnight
 ```
 
-That fetches `/__keel/schema` and writes blank Svelte pages (React is a
-follow-up). Gradle `generateKeelTypes` remains the offline classpath scan
-when no host is running. The live schema carries real page paths; the
-classpath scan uses placeholder `/__keel-typegen/…` paths because
-`@KeelType` does not store the host route.
+That fetches `/__keel/schema` and writes blank Svelte pages. Gradle
+`generateKeelTypes` remains the offline classpath scan when no host is
+running. The live schema carries real page paths; the classpath scan uses
+placeholder `/__keel-typegen/…` paths because `@KeelType` does not store
+the host route.
 
 ## Gradle
 
@@ -101,5 +101,4 @@ CLI equivalent:
 TypegenCli --output page-types.ts --format ts --emit-json page-types.json --pages-name HarborPages --package dev.example.app
 ```
 
-Full JSON Schema for payload shapes is a later extension — the emitter
-already walks `SerialDescriptor`.
+The emitter walks `SerialDescriptor` for payload shapes.

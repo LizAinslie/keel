@@ -6,13 +6,11 @@ order: 4
 ---
 
 import { path } from "../../../lib/paths"
-import Callout from "../../../components/Callout.astro"
 import CodePair from "../../../components/CodePair.astro"
 
 TanStack Query is the async layer **over visits and actions**, not a REST API
 the pack invents. The host seed is still the only read model. Query makes
-"write, then refetch" fluent in Svelte today and React later — same
-`action()`, different adapter.
+"write, then refetch" fluent — same `action()`.
 
 The document seed **hydrates** a `QueryClient` (`['keel','page'] → seed`).
 There is no extra GET on first paint. `staleTime` is `Infinity` until
@@ -51,10 +49,5 @@ and keeps the cache aligned when visits (`Link`) call `setPage`.
 
 Do **not** add `/api/messages`. A pack that `fetch`es a second JSON source is
 against protocol. See
-<a href={path("/docs/core-concepts/actions")}>Server actions</a>.
-
-<Callout title="React later">
-  The React adapter will use the same `action()` plus
-  `@tanstack/react-query`. Harbor is Svelte. The invalidation rule does not
-  change: mutate, visit, rehydrate the seed.
-</Callout>
+<a href={path("/docs/core-concepts/actions")}>Server actions</a>. The
+invalidation rule does not change: mutate, visit, rehydrate the seed.

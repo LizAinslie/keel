@@ -8,8 +8,7 @@ order: 3
 import { path } from "../../../lib/paths"
 
 A pack is a UI that implements page ids. It never owns URL patterns. The
-Svelte adapter is the first implementation of this contract; a React pack
-would ship the same modules against a different compiler.
+Svelte adapter is the first implementation of this contract.
 
 ## PageModule
 
@@ -76,8 +75,7 @@ interface RouterAdapter {
 
 `svelteFiles()` is the default for `framework: "svelte"`. Any other
 framework must pass `router`. Export your adapter from the pack package
-and document it; `tanstackFiles()` / `reactRouterFiles()` are the expected
-follow-ups.
+and document it.
 
 ## Packager and manifest hooks
 

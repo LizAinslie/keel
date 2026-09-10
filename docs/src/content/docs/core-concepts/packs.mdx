@@ -7,83 +7,104 @@ order: 4
 
 import { path } from "../../../lib/paths"
 import CodeBlock from "../../../components/CodeBlock.astro"
+import CodePair from "../../../components/CodePair.astro"
 
-A pack is a `.feb` file: a zip whose root is `manifest.json` plus the modules
-it names (`bootstrap.js`, `pages/`, `chunks/`, `assets/`). There is no nested
-pack directory inside the zip. `manifest.json` maps page ids to modules — the
-pack's implementation of the <a href={path("/docs/core-concepts/contracts")}>host contract</a>.
-A pack may implement a subset; the **host** walks a theme chain and writes the
-chosen pack into the seed.
+A pack is a `.feb`: a zip whose root is `manifest.json` plus the modules it
+names. The manifest maps **page ids** to modules — the pack's implementation
+of the <a href={path("/docs/core-concepts/contracts")}>host contract</a>.
 
-Authors write a file tree of pages (ids, not URL routes). `@kolektiv/keel-pack`'s
-Vite plugin (`keelPack`, with `svelteFiles()` for Svelte) discovers those files,
-emits a module per id, writes `manifest.json`, and can zip the `.feb`. The JSON
-below is the on-disk format the host reads — not something you hand-edit for
-each page.
+Authors write a file tree of pages (ids, not URL routes):
+
+```
+src/pages/
+  +layout.svelte
+  harbor/
+    +layout.svelte
+    home/+page.svelte        → harbor.home
+    user/+page.svelte        → harbor.user
+    notFound/+page.svelte    → harbor.notFound
+```
+
+The id is the directory path with `/` turned into `.`. A sibling `+page.ts`
+may `export const id = "harbor.home"` when the folder name should not be the
+id. `+layout.svelte` files wrap descendant pages, root-first. Route params
+like `[slug]` are not ids — the host owns URLs.
+
+<CodePair
+  fw="svelte"
+  title="src/bootstrap.ts"
+  ts={`import { bootstrap } from "@kolektiv/keel-svelte"
+
+void bootstrap()`}
+  js={`import { bootstrap } from "@kolektiv/keel-svelte"
+
+void bootstrap()`}
+/>
+
+`keelPack` discovers those files, emits a module per id, writes the
+manifest, and can zip the `.feb`.
+
+<CodePair
+  fw="svelte"
+  title="vite.config.ts"
+  ts={`import { svelte } from "@sveltejs/vite-plugin-svelte"
+import { keelPack } from "@kolektiv/keel-pack/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    keelPack({
+      id: "harbor",
+      version: "0.1.0",
+      framework: "svelte",
+      pagesDir: "src/pages",
+      bootstrap: "src/bootstrap.ts",
+      contract: "src/lib/page-types.json",
+      notFound: "harbor.notFound",
+      pack: "dist/harbor.feb",
+    }),
+  ],
+})`}
+  js={`import { svelte } from "@sveltejs/vite-plugin-svelte"
+import { keelPack } from "@kolektiv/keel-pack/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    keelPack({
+      id: "harbor",
+      version: "0.1.0",
+      framework: "svelte",
+      pagesDir: "src/pages",
+      bootstrap: "src/bootstrap.ts",
+      contract: "src/lib/page-types.json",
+      notFound: "harbor.notFound",
+      pack: "dist/harbor.feb",
+    }),
+  ],
+})`}
+/>
 
 The host loads that artifact as a `FrontendBundle` from a **jar resource**, a
 **file**, or an **exploded directory** (dev / watch).
-
-An app with one frontend is a pack that implements every id. A blog theme is
-a pack that implements `blog.home`, `blog.list`, `blog.post` (or a subset)
-against those payload types. Same zip format.
-
-```json
-{
-  "format": "keel/1",
-  "id": "midnight",
-  "version": "1.2.0",
-  "framework": "svelte",
-  "host": "#__keel_root",
-  "pages": {
-    "blog.post": {
-      "module": "pages/blog.post.js",
-      "css": [
-        "assets/blog.post.css"
-      ]
-    }
-  }
-}
-```
-
-`framework` tells the host which adapter to expect. It is not a second
-router. A Svelte pack and a React pack can implement the same page ids; the
-host loads the matching entry module.
 
 <CodeBlock
   lang="kotlin"
   bw="ktor"
   title="FrontendBundle"
-  code={`val midnight = FrontendBundle.fromResource("keel/midnight.feb")
+  code={`val harbor = FrontendBundle.fromResource("keel/harbor.feb")
 val unpacked = FrontendBundle.fromDirectory(Path.of("pack/dist"))
-val file = FrontendBundle.fromFile(Path.of("midnight.feb"))`}
+val file = FrontendBundle.fromFile(Path.of("harbor.feb"))`}
 />
 
-Asset URLs are per bundle: `/__keel/pack/{bundleId}/…`. Seed `entry` / `css` /
-bootstrap are rewritten to that prefix so multiple bundles on one app do not
-clash.
+Asset URLs are per bundle: `/__keel/pack/{bundleId}/…`. Seed `entry` / `css`
+are rewritten to that prefix so multiple bundles on one app do not clash.
 
-Pack authors usually run `keelPack({ pack: "dist/app.feb", contract: "src/lib/page-types.json" })`
-from Vite so the plugin writes the manifest and zip. You can still zip a dist
-with the CLI (`pnpm exec keel-pack --dir dist --out dist/app.feb`). Pass
-`contract` / `--contract` (typegen's `keel/1` JSON, a `.d.ts`, or a JSON list
-of ids) to fail the build when the pack implements an unknown id.
+Pass `contract` (typegen's `keel/1` JSON) so a pack that implements an
+unknown id fails the build. A pack may implement a subset; the host walks
+the theme chain.
 
-The `.feb` layout, `PageModule` contract, `RouterAdapter`, and
-`packager` / `manifest` hooks are specified under
+The `.feb` layout, `PageModule`, and `RouterAdapter` are specified under
 <a href={path("/docs/implementing/pack-adapter")}>Pack adapter</a>.
-
-Svelte pages live under `pagesDir` as `+page.svelte`. The id is the directory
-path with `/` turned into `.` (`pages/blog/post/+page.svelte` → `blog.post`).
-Route params like `[slug]` are not ids — the host owns URLs. A sibling
-`+page.ts` may `export const id = "blog.post"` when the folder name should not
-be the id. `+layout.svelte` files wrap descendant pages, root-first.
-
-## Layouts and notFound
-
-The manifest may declare `layouts` (named layout modules) and `notFound`. A page
-entry may name a layout. Missing from every pack in the chain throws
-`MissingPageInThemeException`; the host should map that to the default pack's
-`notFound` module.
-
-Pages are keyed by **stable ids**, never URL patterns. Paths live on the host.

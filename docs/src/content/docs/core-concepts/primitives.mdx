@@ -1,59 +1,76 @@
 ---
 title: Routing primitives
-description: Framework-agnostic router plus a thin adapter.
+description: Framework-agnostic router plus a thin Svelte adapter.
 category: core-concepts
 order: 5
 ---
 
 import CodePair from "../../../components/CodePair.astro"
 
-The router lives in `@kolektiv/keel`. Adapters wrap it. React later is a second
-binding, not a second router.
+The router lives in `@kolektiv/keel`. `@kolektiv/keel-svelte` wraps it.
 
 | Export | Kind | Notes |
 | --- | --- | --- |
 | `router` | core | visit, get/post/put/patch/delete, reload, prefetch, cancel, on |
 | `action` | core | `POST /__keel/action/{id}` — typed write, not a page |
 | `Link` | component | Renders `<a>` for GET. Non-GET is a button. |
-| `keel` | action | `use:keel` on an existing anchor (Svelte) |
-| `page()` / `usePage()` | function | Reactive seed. No `$page` store. |
+| `keel` | action | `use:keel` on an existing anchor |
+| `page()` | function | Reactive seed |
 | `Form` | component | Progressive enhancement over `router.visit` |
 | `useForm` | function | Field state, errors, processing, progress |
 | `useAction` | function | TanStack mutation: action, then reload the seed |
-| `Head` | component | Reads `page().head`; props override; extra tags are client-only |
+| `Head` | component | Reads `page().head`; props override |
 
 <CodePair
   fw="svelte"
-  title="@kolektiv/keel-svelte"
-  ts={`import { Link, Form, Head, page, router, useForm, useAction, keel } from "@kolektiv/keel-svelte"
+  title="Link, page, visit"
+  ts={`<script lang="ts">
+  import { Link, page, router } from "@kolektiv/keel-svelte"
+  import type { HomePage } from "@app/page-types"
 
-<Link href="/p/hello" prefetch="hover">Hello</Link>
-<a href="/p/hello" use:keel={{ prefetch: "hover" }}>Hello</a>
+  const ctx = page<HomePage>()
+</script>
 
-const ctx = page<BlogPostPage>()
-router.visit("/settings", { preserveScroll: true })
-const save = useAction<SaveIn, SaveOut>("blog.save")`}
-  js={`import { Link, Form, Head, page, router, useForm, useAction, keel } from "@kolektiv/keel-svelte"
+<Link href="/u/ada" prefetch="hover">{ctx.data.viewer?.displayName}</Link>
+<a href="/u/ada" use:keel={{ prefetch: "hover" }}>Ada</a>
+<button type="button" onclick={() => router.visit("/settings", { preserveScroll: true })}>
+  Settings
+</button>`}
+  js={`<script>
+  import { Link, page, router } from "@kolektiv/keel-svelte"
 
-<Link href="/p/hello" prefetch="hover">Hello</Link>
-const ctx = page()
-router.visit("/settings", { preserveScroll: true })
-const save = useAction("blog.save")`}
+  const ctx = page()
+</script>
+
+<Link href="/u/ada" prefetch="hover">{ctx.data.viewer?.displayName}</Link>
+<button type="button" onclick={() => router.visit("/settings", { preserveScroll: true })}>
+  Settings
+</button>`}
 />
 
 <CodePair
-  fw="react"
-  title="@kolektiv/keel-react"
-  ts={`import { Link, Form, Head, usePage, router, useForm } from "@kolektiv/keel-react"
+  fw="svelte"
+  title="Form and useForm"
+  ts={`<script lang="ts">
+  import { Form, useForm } from "@kolektiv/keel-svelte"
 
-<Link href="/p/hello" prefetch="hover">Hello</Link>
-const ctx = usePage<BlogPostPage>()
-router.visit("/settings", { preserveScroll: true })`}
-  js={`import { Link, Form, Head, usePage, router, useForm } from "@kolektiv/keel-react"
+  const comment = useForm({ body: "" })
+</script>
 
-<Link href="/p/hello" prefetch="hover">Hello</Link>
-const ctx = usePage()
-router.visit("/settings", { preserveScroll: true })`}
+<Form action="/p/hello/comments" method="post" resetOnSuccess>
+  <textarea name="body"></textarea>
+  <button type="submit">Post</button>
+</Form>`}
+  js={`<script>
+  import { Form, useForm } from "@kolektiv/keel-svelte"
+
+  const comment = useForm({ body: "" })
+</script>
+
+<Form action="/p/hello/comments" method="post" resetOnSuccess>
+  <textarea name="body"></textarea>
+  <button type="submit">Post</button>
+</Form>`}
 />
 
 ## Visit options
@@ -69,5 +86,5 @@ Mirrored on `router.visit`, `Link`, and form helpers.
 | `prefetch` | `hover`, `mousedown`, or `mount` |
 | `viewTransition` | Optional `document.startViewTransition` |
 
-Prefetch warms both the seed and the entry module. Hover prefetch is the default
-on `Link`.
+Prefetch warms both the seed and the entry module. Hover prefetch is the
+default on `Link`.

@@ -63,45 +63,6 @@ const svelteJs = `<script>
   <p>A greeting from Ktor. This pack is just a page.</p>
   <Link href="/notes">Open notes</Link>
 </main>`
-
-const reactTs = `import { Link, usePage } from "@kolektiv/keel-react"
-import type { HomePage } from "@app/page-types"
-
-export function Home() {
-  const { data } = usePage<HomePage>()
-  return (
-    <>
-      <nav>
-        <Link href="/" prefetch="hover">Harbor</Link>
-      </nav>
-      <main>
-        <p>Typed seed</p>
-        <h1>{data.greeting}</h1>
-        <p>A greeting from Ktor. This pack is just a page.</p>
-        <Link href="/notes">Open notes</Link>
-      </main>
-    </>
-  )
-}`
-
-const reactJs = `import { Link, usePage } from "@kolektiv/keel-react"
-
-export function Home() {
-  const { data } = usePage()
-  return (
-    <>
-      <nav>
-        <Link href="/" prefetch="hover">Harbor</Link>
-      </nav>
-      <main>
-        <p>Typed seed</p>
-        <h1>{data.greeting}</h1>
-        <p>A greeting from Ktor. This pack is just a page.</p>
-        <Link href="/notes">Open notes</Link>
-      </main>
-    </>
-  )
-}`
 ---
 
 <Base title="Keel" description="Host-owned routing for Kotlin MPAs. Declare a page contract, mount one frontend or many packs.">
@@ -143,19 +104,11 @@ export function Home() {
                         { title: "page.svelte", ts: svelteTs, js: svelteJs },
                       ],
                     },
-                    {
-                      id: "react",
-                      label: "React",
-                      files: [
-                        { title: "route.kt", lang: "kotlin", code: ktorSnippet },
-                        { title: "page.tsx", ts: reactTs, js: reactJs },
-                      ],
-                    },
                   ]}
                 />
               </div>
             </div>
-            <div class="z-10 flex justify-center" data-code-show>
+            <div class="z-10 hidden justify-center lg:flex" data-code-show>
               <button
                 type="button"
                 class="btn btn-ghost min-h-11 px-3 font-normal text-base-content/40 hover:bg-transparent hover:text-base-content/70 lg:btn-xs lg:h-7 lg:min-h-7 lg:px-2"

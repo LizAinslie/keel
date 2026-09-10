@@ -29,8 +29,7 @@ cd pack && pnpm install && pnpm build
 ```
 
 `localhost` / `127.*` use `http://`. Other hosts default to `https://`.
-`--framework svelte` is the default. `--framework react` errors until that
-adapter ships. Re-run with `--force` to overwrite.
+`--framework svelte` is the default. Re-run with `--force` to overwrite.
 
 You get `src/pages/app/home/+page.svelte` (id `app.home`), a root layout,
 `src/bootstrap.ts`, and `dist/app.feb` after `pnpm build`. Point the host at
@@ -129,41 +128,6 @@ that implements an unknown id fails the build.
 pnpm build
 # dist/app.feb  →  FrontendBundle.fromFile(Path.of("pack/dist/app.feb"))
 ```
-
-## React (later)
-
-The same Vite plugin will take `framework: "react"` and a `RouterAdapter`
-(`reactFiles()` / `tanstackFiles()`). Until `@kolektiv/keel-react` exists,
-the snippets under the React selector are the target shape — `usePage()`,
-same ids, same seed. Do not invent a client router.
-
-<CodePair
-  title="pages/app/home.tsx (sketched)"
-  fw="react"
-  ts={`import { Head, usePage } from "@kolektiv/keel-react"
-import type { HomePage } from "../../../lib/page-types"
-
-export function Home() {
-  const { data } = usePage<HomePage>()
-  return (
-    <>
-      <Head />
-      <h1>{data.greeting}</h1>
-    </>
-  )
-}`}
-  js={`import { Head, usePage } from "@kolektiv/keel-react"
-
-export function Home() {
-  const { data } = usePage()
-  return (
-    <>
-      <Head />
-      <h1>{data.greeting}</h1>
-    </>
-  )
-}`}
-/>
 
 <Callout title="Reads vs writes">
   `page()` / the seed is the only read model. Mutations go through
