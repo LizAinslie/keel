@@ -44,34 +44,15 @@ publishing {
     repositories {
         mavenLocal()
 
-        val ossrhUser = providers.gradleProperty("keel.ossrhUsername")
-        val ossrhPass = providers.gradleProperty("keel.ossrhPassword")
-        if (ossrhUser.isPresent && ossrhPass.isPresent) {
+        val yuriUser = providers.gradleProperty("keel.publishing.yuriCapitalRepoUsername")
+        val yuriPass = providers.gradleProperty("keel.publishing.yuriCapitalRepoPassword")
+        if (yuriUser.isPresent && yuriPass.isPresent) {
             maven {
-                name = "OSSRH"
-                url = uri(
-                    if (project.version.toString().endsWith("SNAPSHOT")) {
-                        "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-                    } else {
-                        "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-                    },
-                )
+                name = "YuriCapital"
+                url = uri("https://repo.yuri.capital/repository/keel-maven/")
                 credentials {
-                    username = ossrhUser.get()
-                    password = ossrhPass.get()
-                }
-            }
-        }
-
-        val ghUser = providers.gradleProperty("keel.githubPackagesUsername")
-        val ghToken = providers.gradleProperty("keel.githubPackagesToken")
-        if (ghUser.isPresent && ghToken.isPresent) {
-            maven {
-                name = "GitHubPackages"
-                url = uri("https://maven.pkg.github.com/kolektiv/keel")
-                credentials {
-                    username = ghUser.get()
-                    password = ghToken.get()
+                    username = yuriUser.get()
+                    password = yuriPass.get()
                 }
             }
         }

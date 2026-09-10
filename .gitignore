@@ -75,3 +75,5 @@ coverage/
 /package-lock.json
 /.prettierrc
 /.project_id
+
+.claude/settings.local.json
