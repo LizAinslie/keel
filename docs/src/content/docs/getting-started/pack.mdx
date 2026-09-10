@@ -1,0 +1,186 @@
+---
+title: Pack (Svelte)
+description: Scaffold a theme from /__keel/schema, or wire keelPack in Vite by hand.
+category: getting-started
+order: 5
+---
+
+import CodeBlock from "../../../components/CodeBlock.astro"
+import CodePair from "../../../components/CodePair.astro"
+import Callout from "../../../components/Callout.astro"
+import { path } from "../../../lib/paths"
+
+This is the **frontend** half. A pack implements page ids. It never owns
+paths. Two ways in: **scaffold** from a running host, or **Vite + `keelPack`**
+from a blank tree.
+
+Have a host answering `GET /__keel/schema` first —
+<a href={path("/docs/getting-started/host")}>Host (Ktor)</a>.
+
+## Option A — `keel-scaffold`
+
+The host is the source of truth. Scaffold writes blank Svelte pages for every
+id in the schema, plus `page-types.ts`, Vite, and `keelPack`.
+
+```bash
+pnpm add -D @kolektiv/keel-pack
+pnpm exec keel-scaffold 127.0.0.1:8090 ./pack --id app
+cd pack && pnpm install && pnpm build
+```
+
+`localhost` / `127.*` use `http://`. Other hosts default to `https://`.
+`--framework svelte` is the default. `--framework react` errors until that
+adapter ships. Re-run with `--force` to overwrite.
+
+You get `src/pages/app/home/+page.svelte` (id `app.home`), a root layout,
+`src/bootstrap.ts`, and `dist/app.feb` after `pnpm build`. Point the host at
+that file.
+
+## Option B — Vite plugin by hand
+
+Same result, files you type. After
+<a href={path("/docs/getting-started/client")}>Client Setup</a>:
+
+<CodePair
+  title="vite.config.ts"
+  fw="svelte"
+  ts={`import { svelte } from "@sveltejs/vite-plugin-svelte"
+import { keelPack } from "@kolektiv/keel-pack/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    keelPack({
+      id: "app",
+      version: "0.1.0",
+      framework: "svelte",
+      pagesDir: "src/pages",
+      bootstrap: "src/bootstrap.ts",
+      contract: "src/lib/page-types.json",
+      notFound: "app.notFound",
+      pack: "dist/app.feb",
+    }),
+  ],
+})`}
+  js={`import { svelte } from "@sveltejs/vite-plugin-svelte"
+import { keelPack } from "@kolektiv/keel-pack/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    keelPack({
+      id: "app",
+      version: "0.1.0",
+      framework: "svelte",
+      pagesDir: "src/pages",
+      bootstrap: "src/bootstrap.ts",
+      contract: "src/lib/page-types.json",
+      notFound: "app.notFound",
+      pack: "dist/app.feb",
+    }),
+  ],
+})`}
+/>
+
+`pagesDir` is keyed by **id**, not URL. `src/pages/app/home/+page.svelte` is
+`app.home`. A sibling `+page.ts` may `export const id = "app.home"` if the
+folder name should not be the id.
+
+<CodePair
+  title="src/bootstrap.ts"
+  fw="svelte"
+  ts={`import { bootstrap } from "@kolektiv/keel-svelte"
+
+void bootstrap()`}
+  js={`import { bootstrap } from "@kolektiv/keel-svelte"
+
+void bootstrap()`}
+/>
+
+<CodePair
+  title="src/pages/app/home/+page.svelte"
+  fw="svelte"
+  ts={`<script lang="ts">
+  import { Head, page } from "@kolektiv/keel-svelte"
+  import type { HomePage } from "../../../lib/page-types"
+
+  const ctx = page<HomePage>()
+</script>
+
+<Head />
+<h1>{ctx.data.greeting}</h1>`}
+  js={`<script>
+  import { Head, page } from "@kolektiv/keel-svelte"
+
+  const ctx = page()
+</script>
+
+<Head />
+<h1>{ctx.data.greeting}</h1>`}
+/>
+
+Copy `page-types.ts` / `.json` from `GET /__keel/schema` (scaffold does this)
+or from Gradle `generateKeelTypes`. Point `contract` at the JSON so a pack
+that implements an unknown id fails the build.
+
+```bash
+pnpm build
+# dist/app.feb  →  FrontendBundle.fromFile(Path.of("pack/dist/app.feb"))
+```
+
+## React (later)
+
+The same Vite plugin will take `framework: "react"` and a `RouterAdapter`
+(`reactFiles()` / `tanstackFiles()`). Until `@kolektiv/keel-react` exists,
+the snippets under the React selector are the target shape — `usePage()`,
+same ids, same seed. Do not invent a client router.
+
+<CodePair
+  title="pages/app/home.tsx (sketched)"
+  fw="react"
+  ts={`import { Head, usePage } from "@kolektiv/keel-react"
+import type { HomePage } from "../../../lib/page-types"
+
+export function Home() {
+  const { data } = usePage<HomePage>()
+  return (
+    <>
+      <Head />
+      <h1>{data.greeting}</h1>
+    </>
+  )
+}`}
+  js={`import { Head, usePage } from "@kolektiv/keel-react"
+
+export function Home() {
+  const { data } = usePage()
+  return (
+    <>
+      <Head />
+      <h1>{data.greeting}</h1>
+    </>
+  )
+}`}
+/>
+
+<Callout title="Reads vs writes">
+  `page()` / the seed is the only read model. Mutations go through
+  `action()` / `useAction(id)`, then a visit rehydrates. Do not `fetch` a
+  second JSON API for page data.
+</Callout>
+
+## Load it on the host
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="fromFile / fromDirectory"
+  code={`val prod = FrontendBundle.fromFile(Path.of("pack/dist/app.feb"))
+val dev = FrontendBundle.fromDirectory(Path.of("pack/dist"))`}
+/>
+
+Then <a href={path("/docs/getting-started/first-page")}>register a page</a>
+if you have not already, and restart the host. Document GET should show the
+Svelte UI; a visit returns the seed JSON.

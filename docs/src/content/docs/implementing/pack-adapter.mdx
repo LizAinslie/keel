@@ -1,0 +1,107 @@
+---
+title: Pack adapter
+description: PageModule, bootstrap, manifest.json, .feb layout, and writing a RouterAdapter.
+category: implementing
+order: 3
+---
+
+import { path } from "../../../lib/paths"
+
+A pack is a UI that implements page ids. It never owns URL patterns. The
+Svelte adapter is the first implementation of this contract; a React pack
+would ship the same modules against a different compiler.
+
+## PageModule
+
+Every page module exports:
+
+```ts
+export function mount(host: Element, ctx: PageContext<T>): void | Promise<void>
+export function unmount(): void | Promise<void>
+export function update?(ctx: PageContext<T>): void | Promise<void>
+```
+
+`update` runs when a visit keeps the same page id and `preserveState` is set
+(partial reloads, validation 422s). Framework adapters generate this wrapper
+so authors write ordinary files.
+
+## Bootstrap and hydration
+
+The shell loads `bootstrap.js` as a module. Bootstrap reads `#__keel_seed`,
+mounts the entry, and starts the router. The initial `applySeed` must **not**
+steal focus or announce — that is for subsequent client navigations.
+
+Client visits go to the **page URL** with `X-Keel-Visit: true`. Prefetch
+dedupes in-flight GETs, caps the seed cache, and must ignore partial
+responses.
+
+## `manifest.json` and `.feb`
+
+A `.feb` is a zip whose root is `manifest.json` plus the files it names.
+There is no nested pack directory. Format `keel/1`:
+
+```json
+{
+  "format": "keel/1",
+  "id": "harbor",
+  "version": "0.1.0",
+  "framework": "svelte",
+  "host": "#__keel_root",
+  "pages": {
+    "harbor.home": {
+      "module": "pages/harbor.home.js",
+      "css": [
+        "assets/styles.css"
+      ]
+    }
+  },
+  "notFound": "pages/harbor.notFound.js"
+}
+```
+
+`keel-pack` zips a Vite dist into that archive. The Vite plugin
+(`keelPack`) discovers pages, writes the manifest, and calls a packager.
+
+## RouterAdapter
+
+`RouterAdapter` maps files to page ids — never URL params:
+
+```ts
+interface RouterAdapter {
+  name: string
+  discover(pagesDir: string): DiscoveredPage[]
+  entrySource(page: DiscoveredPage): string
+}
+```
+
+`svelteFiles()` is the default for `framework: "svelte"`. Any other
+framework must pass `router`. Export your adapter from the pack package
+and document it; `tanstackFiles()` / `reactRouterFiles()` are the expected
+follow-ups.
+
+## Packager and manifest hooks
+
+```ts
+keelPack({
+  id: "app",
+  version: "1.0.0",
+  framework: "svelte",
+  manifest: (base) => ({ ...base, /* host extension fields */ }),
+  packager: (opts) => { /* directory, tarball, CDN upload; default is packFeb */ },
+})
+```
+
+`packFeb` remains the default packager. Point `contract` at typegen's JSON
+(`keel/1` `{ pages }`) so unknown ids fail the build; a `.ts` Pages
+interface is still accepted as a fallback.
+
+To start a pack from a running host:
+
+```
+pnpm exec keel-scaffold <origin> ./pack
+```
+
+See <a href={path("/docs/implementing/typegen")}>Typegen</a>.
+
+See <a href={path("/docs/core-concepts/packs")}>Packs and manifests</a> for
+the author-facing description.

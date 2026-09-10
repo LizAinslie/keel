@@ -16,12 +16,21 @@ then passes a typed context into `mount()`. Document requests place it in
   "v": 1,
   "page": "blog.post",
   "path": "/p/hello",
-  "params": { "slug": "hello" },
-  "data": { "title": "Hello" },
+  "params": {
+    "slug": "hello"
+  },
+  "data": {
+    "title": "Hello"
+  },
   "errors": {},
-  "theme": { "id": "midnight", "version": "1.2.0" },
+  "theme": {
+    "id": "midnight",
+    "version": "1.2.0"
+  },
   "entry": "/themes/midnight/pages/blog.post.js",
-  "css": ["/themes/midnight/assets/blog.post.css"],
+  "css": [
+    "/themes/midnight/assets/blog.post.css"
+  ],
   "host": "#__keel_root",
   "head": {
     "title": "Hello · Blog",
@@ -53,7 +62,12 @@ so `<Head>` can stay in sync after `pushState`. See
 | `X-Keel-Except` | Partial reload: drop these data keys |
 | `X-Keel-Theme` | Request a pack override |
 | `X-Keel-Version` | Client protocol version |
-| `X-Keel-Partial` | Hint that this visit is a partial |
+| `X-Keel-Partial` | Visit response: comma-separated `data` keys that were kept |
+
+Partial visits (`X-Keel-Only` / `X-Keel-Except`) filter **top-level** `data`
+keys and only on JSON visits — never on the document GET. The client
+shallow-merges the result over the currently mounted page. See
+<a href={path("/docs/advanced/partials")}>Partial reloads</a>.
 
 ## Page module
 

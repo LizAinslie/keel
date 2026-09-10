@@ -38,7 +38,9 @@ against those payload types. Same zip format.
   "pages": {
     "blog.post": {
       "module": "pages/blog.post.js",
-      "css": ["assets/blog.post.css"]
+      "css": [
+        "assets/blog.post.css"
+      ]
     }
   }
 }
@@ -61,11 +63,15 @@ Asset URLs are per bundle: `/__keel/pack/{bundleId}/…`. Seed `entry` / `css` /
 bootstrap are rewritten to that prefix so multiple bundles on one app do not
 clash.
 
-Pack authors usually run `keelPack({ pack: "dist/app.feb", contract: "src/lib/page-types.ts" })`
+Pack authors usually run `keelPack({ pack: "dist/app.feb", contract: "src/lib/page-types.json" })`
 from Vite so the plugin writes the manifest and zip. You can still zip a dist
 with the CLI (`pnpm exec keel-pack --dir dist --out dist/app.feb`). Pass
-`contract` / `--contract` (a typegen `.d.ts` or a JSON list of ids) to fail the
-build when the pack implements an unknown id.
+`contract` / `--contract` (typegen's `keel/1` JSON, a `.d.ts`, or a JSON list
+of ids) to fail the build when the pack implements an unknown id.
+
+The `.feb` layout, `PageModule` contract, `RouterAdapter`, and
+`packager` / `manifest` hooks are specified under
+<a href={path("/docs/implementing/pack-adapter")}>Pack adapter</a>.
 
 Svelte pages live under `pagesDir` as `+page.svelte`. The id is the directory
 path with `/` turned into `.` (`pages/blog/post/+page.svelte` → `blog.post`).

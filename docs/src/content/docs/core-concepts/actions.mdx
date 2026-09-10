@@ -50,6 +50,11 @@ page seed. Success is **200** `{ "data": … }`. Unknown ids are **404**.
 The `actions { action<In, Out>(id) { } }` DSL is still available when you want
 the handler inline.
 
+Writes are CSRF-protected: `Content-Type: application/json` or
+`X-Keel-Visit`, plus a same-origin `Origin` / `Sec-Fetch-Site` (or an
+allowlisted origin). A blocked write is **403** `{ "errors": { "csrf": […] } }`.
+See <a href={path("/docs/implementing/protocol")}>the wire protocol</a>.
+
 The pack never invents a URL. It calls the id:
 
 <CodePair

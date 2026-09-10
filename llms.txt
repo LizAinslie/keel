@@ -1,0 +1,37 @@
+# Keel
+
+> Host-owned routing and swappable frontend packs. The server owns URLs, page ids, and payload types. Packs implement ids — never paths.
+
+Keel is a protocol plus Kotlin/JS libraries. Format `keel/1`. First host adapter is Ktor; first pack adapter is Svelte 5. Maven: `dev.kolektiv.keel:core`, `dev.kolektiv.keel:ktor`. npm: `@kolektiv/keel`, `@kolektiv/keel-svelte`, `@kolektiv/keel-pack`.
+
+Live contract: `GET /__keel/schema` on any Keel host. Scaffold a pack with `keel-scaffold <origin> <dir>`.
+
+Docs: https://lizainslie.github.io/keel/  (GitHub Pages; local `pnpm dev` is http://127.0.0.1:8080/)
+
+## Docs
+
+- [Server Installation](https://lizainslie.github.io/keel/docs/getting-started/server/): Maven — one repo (`maven-releases` or `maven-snapshots`), `dev.kolektiv.keel:core`
+- [Client Setup](https://lizainslie.github.io/keel/docs/getting-started/client/): npm — one registry (`npm-releases` or `npm-snapshots`), `@kolektiv/keel*`
+- [Host (Ktor)](https://lizainslie.github.io/keel/docs/getting-started/host/): stand up a Keel host
+- [Pack (Svelte)](https://lizainslie.github.io/keel/docs/getting-started/pack/): keel-scaffold or keelPack in Vite
+- [Wire protocol](https://lizainslie.github.io/keel/docs/implementing/protocol/): seed JSON, headers, status codes, path grammar, CSRF, `/__keel/schema`
+- [Host adapter](https://lizainslie.github.io/keel/docs/implementing/host-adapter/): what a backend must implement
+- [Pack adapter](https://lizainslie.github.io/keel/docs/implementing/pack-adapter/): PageModule, .feb, RouterAdapter
+- [Typegen](https://lizainslie.github.io/keel/docs/implementing/typegen/): `.ts`, `.d.ts`, JSON contract
+- [Routing](https://lizainslie.github.io/keel/docs/core-concepts/routing/)
+- [Actions](https://lizainslie.github.io/keel/docs/core-concepts/actions/)
+- [Packs](https://lizainslie.github.io/keel/docs/core-concepts/packs/)
+- [AGENTS.md](https://github.com/LizAinslie/keel/blob/main/AGENTS.md): how to work in this repository
+
+## Optional
+
+- [Harbor sample](https://github.com/LizAinslie/keel/tree/main/samples/harbor): `./gradlew :samples:harbor:run` → http://127.0.0.1:8090
+- [Partial reloads](https://lizainslie.github.io/keel/docs/advanced/partials/)
+
+## Skills
+
+- [keel-host](https://raw.githubusercontent.com/LizAinslie/keel/main/skills/keel-host/SKILL.md): implement a Keel server
+- [keel-pack](https://raw.githubusercontent.com/LizAinslie/keel/main/skills/keel-pack/SKILL.md): author a frontend pack
+- [keel-scaffold](https://raw.githubusercontent.com/LizAinslie/keel/main/skills/keel-scaffold/SKILL.md): scaffold a pack from `/__keel/schema`
+
+Install: copy `skills/*` into `.claude/skills/`, `.grok/skills/`, or `.agents/skills/`. See `skills/README.md`.

@@ -1,0 +1,161 @@
+---
+title: Host (Ktor)
+description: Stand up a Keel host — registry, HTML shell, visits, and /__keel/schema.
+category: getting-started
+order: 4
+---
+
+import CodeBlock from "../../../components/CodeBlock.astro"
+import Callout from "../../../components/Callout.astro"
+import { path } from "../../../lib/paths"
+
+This walkthrough is the **server** half. You will have a Ktor process that
+owns URLs, page ids, and payload types, serves an HTML shell, answers visits
+as JSON, and exposes the pack contract at `GET /__keel/schema`.
+
+The pack (Svelte pages, Vite, `.feb`) is the next page:
+<a href={path("/docs/getting-started/pack")}>Pack (Svelte)</a>.
+
+## 1. Gradle project
+
+Java 17+, Kotlin 2.2, Ktor 3. Add the **releases** repo and
+`dev.kolektiv.keel:core` from
+<a href={path("/docs/getting-started/server")}>Server Installation</a>.
+This walkthrough also needs the Ktor adapter and a server engine.
+
+<CodeBlock
+  title="plugins + ktor adapter"
+  frameworks={[
+    {
+      id: "kts",
+      label: "build.gradle.kts",
+      lang: "kotlin",
+      code: `plugins {
+    kotlin("jvm") version "2.2.21"
+    kotlin("plugin.serialization") version "2.2.21"
+    application
+}
+
+repositories {
+    mavenCentral()
+    maven("https://repo.yuri.capital/repository/maven-releases/")
+}
+
+dependencies {
+    implementation("dev.kolektiv.keel:ktor:0.0.1")
+    implementation("io.ktor:ktor-server-netty:3.1.3")
+}
+
+application {
+    mainClass.set("com.example.app.MainKt")
+}`,
+    },
+    {
+      id: "groovy",
+      label: "build.gradle",
+      lang: "groovy",
+      code: `plugins {
+    id 'org.jetbrains.kotlin.jvm' version '2.2.21'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.2.21'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.yuri.capital/repository/maven-releases/' }
+}
+
+dependencies {
+    implementation 'dev.kolektiv.keel:ktor:0.0.1'
+    implementation 'io.ktor:ktor-server-netty:3.1.3'
+}
+
+application {
+    mainClass = 'com.example.app.MainKt'
+}`,
+    },
+  ]}
+/>
+
+## 2. Pages and a pack
+
+A page is an id, a path, and a `@Serializable` payload. The pack file is a
+`.feb` (zip of `manifest.json` + modules). Until you
+<a href={path("/docs/getting-started/pack")}>build one</a>, point at an
+exploded `pack/dist` from Vite or a file you already have.
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="App.kt"
+  code={`@Serializable
+data class HomePage(val greeting: String)
+
+@Serializable
+data class NotFoundPage(val path: String)
+
+fun Application.app(bundle: FrontendBundle) {
+    keel {
+        this.bundle = bundle
+        title = "App"
+        notFoundPageId = "app.notFound"
+        pages {
+            page<HomePage>("app.home", "/") {
+                head("Home", description = "A Keel host.")
+                HomePage("hello")
+            }
+            page<NotFoundPage>("app.notFound", "/__not-found") {
+                head("Not found")
+                NotFoundPage(path)
+            }
+        }
+    }
+}`}
+/>
+
+`keel { }` installs routes: document GET, visits on the page URL,
+`POST /__keel/action/{id}`, pack files under `/__keel/pack/{id}/…`, and
+**`GET /__keel/schema`**.
+
+## 3. Boot Netty
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="Main.kt"
+  code={`fun main() {
+    val bundle = FrontendBundle.fromFile(Path.of("pack/dist/app.feb"))
+    embeddedServer(Netty, port = 8090, host = "127.0.0.1") {
+        app(bundle)
+    }.start(wait = true)
+}`}
+/>
+
+`FrontendBundle.fromResource("keel/app.feb")` is the usual production shape
+(the `.feb` on the classpath). `fromDirectory(Path.of("pack/dist"))` is
+handy while Vite `--watch` is rewriting `dist/`.
+
+## 4. Run and probe
+
+```bash
+./gradlew run
+curl -sS http://127.0.0.1:8090/ | head
+curl -sS http://127.0.0.1:8090/ -H 'X-Keel-Visit: true'
+curl -sS http://127.0.0.1:8090/__keel/schema
+```
+
+The document is the HTML shell (`#__keel_seed`, `modulepreload`, styles with
+`data-keel-css`). The visit is the same seed as JSON. The schema is the
+`keel/1` contract `keel-scaffold` fetches.
+
+<Callout title="No pack yet?">
+  You can still register pages and hit `/__keel/schema`. Document GET needs
+  a bundle that implements the page id. Scaffold the pack next, then drop
+  `app.feb` on the host and restart (or load `fromDirectory` in dev).
+</Callout>
+
+## What you did not do
+
+You did not give the pack a URL router. Paths stay on this process. After
+the pack exists, adding a second theme is a second `FrontendBundle` in
+`bundles` / a theme chain — same `page<T>(id, path)` calls.

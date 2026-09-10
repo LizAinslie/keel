@@ -7,7 +7,7 @@ const docs = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    category: z.enum(["getting-started", "core-concepts", "advanced"]),
+    category: z.enum(["getting-started", "core-concepts", "advanced", "implementing"]),
     order: z.number(),
   }),
 })

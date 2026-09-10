@@ -1,0 +1,72 @@
+---
+title: Host adapter
+description: What a backend must implement to be a Keel host. The Ktor plugin is the reference.
+category: implementing
+order: 2
+---
+
+import { path } from "../../../lib/paths"
+
+A Keel host owns URLs, page ids, payload types, actions, and which pack to
+mount. It is not required to be JVM. The Ktor adapter
+(`KeelEngine`, `HtmlDocument`) is the reference implementation of this
+checklist.
+
+## Page registry
+
+- Store `(id, path, serializer, methods)` with path parsed as the
+  <a href={path("/docs/implementing/protocol")}>Keel grammar</a>.
+- Resolve incoming paths by **specificity**, not registration order.
+- Default methods to `{ GET }`. Bind only declared methods.
+- Typegen walks the same registry (or `@KeelType` / `@KeelAction` annotations)
+  to emit the pack contract.
+- Serve **`GET /__keel/schema`** as that JSON from the live registries.
+  `keel-scaffold` fetches it. The Ktor adapter does this in `KeelEngine`.
+
+## Seed construction
+
+Build a seed for every document and visit: page id, absolute path, params,
+encoded payload, selected theme `{ id, version }`, entry URL, css URLs, host
+selector, optional `head` / `shared` / `redirect`.
+
+## Document vs visit
+
+- No `X-Keel-Visit`: HTML shell. Write `seed.head` into `<head>`. Emit
+  `<link rel="modulepreload">` for bootstrap and `seed.entry`. Stylesheet
+  links must carry `data-keel-css` so the client can adopt them.
+- `X-Keel-Visit: true`: JSON seed. Apply `only` / `except` to top-level
+  `data` keys and set `X-Keel-Partial` to the retained list.
+
+## Actions
+
+`POST /__keel/action/{id}`. Decode JSON with the action's input serializer,
+run `(In) -> Out`, encode `{ "data": out }`. Validation is 422
+`{ "errors": … }`. If you bind context with a thread-local, propagate it
+across coroutine / async hops (`ThreadLocal.asContextElement()` on JVM).
+
+## Pack loading and assets
+
+Load a `.feb` (zip of `manifest.json` + modules), a classpath resource, or an
+exploded directory. Serve files at `/__keel/pack/{bundleId}/…`.
+
+- Strong `ETag` (CRC for zip entries, size+mtime for directories).
+- Honour `If-None-Match` with 304.
+- `Cache-Control: public, max-age=31536000, immutable` for hashed chunks
+  (`chunks/[name]-[hash].js`) and `assets/`.
+- Otherwise `public, max-age=0, must-revalidate`.
+
+Keep the zip central directory open for the bundle's lifetime; do not reopen
+it on every request.
+
+## Theme resolution
+
+`ChainThemeResolver` walks configured packs until one implements the page id.
+An override arrives as `X-Keel-Theme`. Missing from every pack is a host
+error — map it to the default pack's `notFound`.
+
+## CSRF
+
+Apply the
+<a href={path("/docs/implementing/protocol")}>protocol CSRF baseline</a> to
+every write (page POST and actions). Expose a pluggable policy so a host can
+allowlist extra origins. Set session cookies `SameSite=Lax`.

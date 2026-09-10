@@ -16,7 +16,6 @@ const {
 const pageTitle = title === "Keel" ? "Keel" : `${title} · Keel`
 const docs = await allDocs()
 const previewPaths = [path("/"), path("/docs"), ...docs.map((entry) => path(`/docs/${entry.id}`))]
-const ogImage = new URL(path("/og.jpg").replace(/^\//, ""), Astro.site ?? "http://localhost:8080/").href
 const pageUrl = new URL(path("/").replace(/^\//, ""), Astro.site ?? "http://localhost:8080/").href
 ---
 
@@ -39,12 +38,10 @@ const pageUrl = new URL(path("/").replace(/^\//, ""), Astro.site ?? "http://loca
     <meta property="og:type" content="website" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImage} />
     <meta property="og:url" content={pageUrl} />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImage} />
     <link rel="icon" type="image/svg+xml" href={path("/favicon.svg")} />
     <link rel="apple-touch-icon" href={path("/logo.svg")} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

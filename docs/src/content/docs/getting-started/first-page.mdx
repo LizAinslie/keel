@@ -2,7 +2,7 @@
 title: First page
 description: Register a page on the host, implement it in a pack.
 category: getting-started
-order: 3
+order: 6
 ---
 
 import CodeBlock from "../../../components/CodeBlock.astro"
@@ -11,6 +11,9 @@ import { path } from "../../../lib/paths"
 
 A page has a **stable id**, a **payload type**, and a **host path**. The pack
 never sees the path pattern — only the resolved `path`, `params`, and `data`.
+If you have not stood the process up yet, start with
+<a href={path("/docs/getting-started/host")}>the host</a> and
+<a href={path("/docs/getting-started/pack")}>the pack</a>.
 
 This is the one-pack shape: you own the host and the frontend. The same
 registry is the contract theme authors would implement if you later install

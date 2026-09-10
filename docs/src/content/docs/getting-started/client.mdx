@@ -1,0 +1,107 @@
+---
+title: Client Setup
+description: Point the @kolektiv npm scope at Nexus releases and install the router.
+category: getting-started
+order: 3
+---
+
+import CodePair from "../../../components/CodePair.astro"
+import Callout from "../../../components/Callout.astro"
+import { path } from "../../../lib/paths"
+
+The router is framework-agnostic. Svelte is the first rig. React is sketched
+against the same `PageModule` contract and is not published yet.
+
+Pick **one** npm repository: releases for numbered versions, or snapshots
+for `*-SNAPSHOT*`. Do not point the scope at both.
+
+## Releases (recommended)
+
+Current line: `0.0.1`. Put this in `.npmrc` at the pack root (or your user
+`~/.npmrc`):
+
+```bash
+# .npmrc
+@kolektiv:registry=https://repo.yuri.capital/repository/npm-releases/
+```
+
+Then install:
+
+<CodePair
+  title="package.json — Svelte pack"
+  fw="svelte"
+  ts={`{
+  "dependencies": {
+    "@kolektiv/keel": "0.0.1",
+    "@kolektiv/keel-svelte": "0.0.1",
+    "svelte": "^5.16.0"
+  },
+  "devDependencies": {
+    "@kolektiv/keel-pack": "0.0.1",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "vite": "^6.2.0"
+  }
+}`}
+  js={`{
+  "dependencies": {
+    "@kolektiv/keel": "0.0.1",
+    "@kolektiv/keel-svelte": "0.0.1",
+    "svelte": "^5.16.0"
+  },
+  "devDependencies": {
+    "@kolektiv/keel-pack": "0.0.1",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "vite": "^6.2.0"
+  }
+}`}
+/>
+
+<CodePair
+  title="package.json — React pack"
+  fw="react"
+  ts={`{
+  "dependencies": {
+    "@kolektiv/keel": "0.0.1",
+    "@kolektiv/keel-react": "0.0.1",
+    "react": "^19.0.0"
+  }
+}`}
+  js={`{
+  "dependencies": {
+    "@kolektiv/keel": "0.0.1",
+    "@kolektiv/keel-react": "0.0.1",
+    "react": "^19.0.0"
+  }
+}`}
+/>
+
+<Callout title="React is sketched">
+  Switch the frontend selector to React to see upcoming snippets.
+  `@kolektiv/keel-react` is not published yet — it will implement the same
+  `mount(host, ctx)` contract. Until then, scaffold and `keelPack` target
+  Svelte.
+</Callout>
+
+`@kolektiv/keel` is the host router (visits, history, prefetch, `action()`).
+`@kolektiv/keel-svelte` is the Svelte 5 bindings. `@kolektiv/keel-pack` is
+the toolchain: `keel-scaffold` from a live host schema, a Vite plugin
+(`keelPack`) that discovers pages and writes a `.feb`, and `keel-pack` to
+zip a dist by hand.
+
+## Snapshots instead
+
+If you are tracking snapshot builds, point the scope at snapshots **instead
+of** releases:
+
+```bash
+# .npmrc
+@kolektiv:registry=https://repo.yuri.capital/repository/npm-snapshots/
+```
+
+Publishers write to `keel-npm` (grouped) plus one of those two. You only
+need the consumer URL you chose. Resolving does not require Nexus
+credentials; publishing does.
+
+Next: <a href={path("/docs/getting-started/pack")}>scaffold a pack</a>.
+The host half is
+<a href={path("/docs/getting-started/host")}>Host (Ktor)</a>.

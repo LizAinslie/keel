@@ -6,6 +6,7 @@ order: 1
 ---
 
 import Callout from "../../../components/Callout.astro"
+import { path } from "../../../lib/paths"
 
 Keel is a protocol and a small set of libraries for serving MPAs with a
 frameworked UI from Kotlin. The **host** owns URLs, page ids, payload types,
@@ -26,6 +27,12 @@ Visitors never store a theme. The host does.
 
 The first host is Ktor. The first adapter is Svelte 5. React is next — same
 router, different bindings.
+
+Walkthrough: <a href={path("/docs/getting-started/server")}>server</a> →
+<a href={path("/docs/getting-started/client")}>client</a> →
+<a href={path("/docs/getting-started/host")}>Ktor host</a> →
+<a href={path("/docs/getting-started/pack")}>Svelte pack</a> →
+<a href={path("/docs/getting-started/first-page")}>first page</a>.
 
 ## The split
 
@@ -52,8 +59,13 @@ router, different bindings.
   "v": 1,
   "page": "home",
   "path": "/",
-  "data": { "greeting": "Hello" },
-  "theme": { "id": "harbor", "version": "1.0.0" },
+  "data": {
+    "greeting": "Hello"
+  },
+  "theme": {
+    "id": "harbor",
+    "version": "1.0.0"
+  },
   "entry": "/themes/harbor/pages/home.js",
   "host": "#__keel_root"
 }

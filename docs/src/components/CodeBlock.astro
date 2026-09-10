@@ -6,7 +6,7 @@ interface FrameworkOption {
   id: string
   label: string
   title?: string
-  lang?: "ts" | "js" | "kotlin" | "json" | "bash"
+  lang?: string
   code?: string
   ts?: string
   js?: string
@@ -14,7 +14,7 @@ interface FrameworkOption {
 
 interface Props {
   code?: string
-  lang?: "ts" | "js" | "kotlin" | "json" | "bash"
+  lang?: string
   title?: string
   fw?: string
   bw?: string

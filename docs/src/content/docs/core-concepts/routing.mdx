@@ -14,9 +14,13 @@ third-party theme can both implement `blog.post` while the Ktor route stays
 put. It is also what makes a one-pack app simple — the registry is the only
 router.
 
-`PageRegistry` stores the id, a Ktor-style pattern, and the payload
-serializer. Duplicate ids throw. Unknown ids throw. Matching supports
-`{param}` segments.
+`PageRegistry` stores the id, a Keel path pattern, the payload serializer,
+and the HTTP methods the page accepts (GET by default — POST is opt-in).
+Duplicate ids throw. Unknown ids throw. The grammar is `{name}` (required
+segment), `{name?}` (optional trailing segment), and `{name...}` (tailcard).
+When several patterns match, specificity wins: `/p/new` beats `/p/{slug}`
+beats `/p/{rest...}`. See
+<a href={path("/docs/implementing/protocol")}>the wire protocol</a>.
 
 The registry plus those serializers **is** the page contract. See
 <a href={path("/docs/core-concepts/contracts")}>Page contracts</a>.
@@ -56,6 +60,7 @@ pages DSL is sugar: register path + loader, then on match call `respondPage`.
         pages {
             page<HomePage>("harbor.home", "/") { HomePage(...) }
             page<UserPage>("harbor.user", "/u/{id}") { ... }
+            page<FormPage>("form", "/form", methods = setOf(PageMethod.GET, PageMethod.POST)) { ... }
         }
     }
 }`}

@@ -1,0 +1,105 @@
+---
+title: Typegen contract
+description: Generate .ts, .d.ts, and keel/1 JSON from page and action types. Consume them from any language.
+category: implementing
+order: 4
+---
+
+import { path } from "../../../lib/paths"
+import CodeBlock from "../../../components/CodeBlock.astro"
+
+Page ids plus kotlinx.serialization payload types **are** the contract.
+Typegen walks `@KeelType` / `@KeelAction` (or a live `PageRegistry` +
+`ActionRegistry`) and emits two artifacts.
+
+## TypeScript
+
+Default `--format ts` writes interfaces the pack imports. `--format dts`
+writes the same declarations for a `.d.ts` entry.
+
+```ts
+export interface HomePage { greeting: string }
+export interface HarborPages {
+  "harbor.home": HomePage
+}
+export type HarborPageId = keyof HarborPages
+export interface HarborActions {
+  "harbor.setName": { in: SetNameIn; out: SetNameOut }
+}
+```
+
+## JSON
+
+`--emit-json path` writes a language-agnostic document another codegen
+reads without parsing TypeScript. A running host serves the **same** document
+at `GET /__keel/schema`.
+
+```json
+{
+  "format": "keel/1",
+  "pagesName": "Pages",
+  "pages": {
+    "harbor.home": {
+      "type": "HomePage",
+      "path": "/",
+      "methods": [
+        "GET"
+      ]
+    }
+  },
+  "actions": {
+    "harbor.setName": {
+      "in": "SetNameIn",
+      "out": "SetNameOut"
+    }
+  },
+  "types": {
+    "HomePage": {
+      "kind": "object",
+      "fields": {
+        "greeting": "string"
+      }
+    }
+  }
+}
+```
+
+`keel-pack` prefers `.pages` on this document. A raw id array or a scraped
+`export interface *Pages` block still works as a fallback.
+
+## Scaffold
+
+```
+pnpm exec keel-scaffold 127.0.0.1:8090 ./pack
+pnpm exec keel-scaffold example.com ./theme --id midnight
+```
+
+That fetches `/__keel/schema` and writes blank Svelte pages (React is a
+follow-up). Gradle `generateKeelTypes` remains the offline classpath scan
+when no host is running. The live schema carries real page paths; the
+classpath scan uses placeholder `/__keel-typegen/…` paths because
+`@KeelType` does not store the host route.
+
+## Gradle
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="keelTypegen"
+  code={`keelTypegen {
+    output.set(layout.projectDirectory.file("pack/src/lib/page-types.ts"))
+    json.set(layout.projectDirectory.file("pack/src/lib/page-types.json"))
+    format.set("ts")
+    pagesName.set("HarborPages")
+    packages.add("dev.kolektiv.keel.samples.harbor")
+}`}
+/>
+
+CLI equivalent:
+
+```
+TypegenCli --output page-types.ts --format ts --emit-json page-types.json --pages-name HarborPages --package dev.example.app
+```
+
+Full JSON Schema for payload shapes is a later extension — the emitter
+already walks `SerialDescriptor`.

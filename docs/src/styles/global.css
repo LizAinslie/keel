@@ -298,11 +298,18 @@ html[data-backend="ktor"] [data-bw]:not([data-bw~="ktor"]):not([data-bw~="all"])
   display: none;
 }
 
-.keel-deck[data-framework="svelte"] [data-framework-panel]:not([data-framework-panel="svelte"]),
-.keel-deck[data-framework="react"] [data-framework-panel]:not([data-framework-panel="react"]),
-.keel-code[data-framework="svelte"] [data-framework-panel]:not([data-framework-panel="svelte"]),
-.keel-code[data-framework="react"] [data-framework-panel]:not([data-framework-panel="react"]) {
+.keel-deck[data-framework] [data-framework-panel],
+.keel-code[data-framework] [data-framework-panel] {
   display: none;
+}
+
+.keel-deck[data-framework="svelte"] [data-framework-panel="svelte"],
+.keel-deck[data-framework="react"] [data-framework-panel="react"],
+.keel-code[data-framework="svelte"] [data-framework-panel="svelte"],
+.keel-code[data-framework="react"] [data-framework-panel="react"],
+.keel-code[data-framework="kts"] [data-framework-panel="kts"],
+.keel-code[data-framework="groovy"] [data-framework-panel="groovy"] {
+  display: block;
 }
 
 .keel-deck[data-file="0"] [data-file-panel]:not([data-file-panel="0"]),

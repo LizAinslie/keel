@@ -4,6 +4,7 @@ export const CATEGORIES = [
   { id: "getting-started", label: "Getting started" },
   { id: "core-concepts", label: "Core concepts" },
   { id: "advanced", label: "Advanced cases" },
+  { id: "implementing", label: "Implementing Keel" },
 ] as const
 
 export type CategoryId = (typeof CATEGORIES)[number]["id"]

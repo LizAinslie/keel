@@ -1,0 +1,74 @@
+---
+title: Server Installation
+description: Add the Yuri Capital Maven releases repo and dev.kolektiv.keel:core.
+category: getting-started
+order: 2
+---
+
+import CodeBlock from "../../../components/CodeBlock.astro"
+import Callout from "../../../components/Callout.astro"
+import { path } from "../../../lib/paths"
+
+Host artifacts live on Nexus at `repo.yuri.capital`. Pick **one** Maven
+repository: releases for numbered versions, or snapshots for `*-SNAPSHOT*`.
+Do not add both — Gradle will mix channels.
+
+This page is **core** only (`dev.kolektiv.keel:core`). It has no Ktor
+dependency. Protocol format `keel/1`. Seed version `1`.
+
+## Releases (recommended)
+
+Current line: `0.0.1`.
+
+<CodeBlock
+  title="repositories + core"
+  frameworks={[
+    {
+      id: "kts",
+      label: "build.gradle.kts",
+      lang: "kotlin",
+      code: `repositories {
+    mavenCentral()
+    maven("https://repo.yuri.capital/repository/maven-releases/")
+}
+
+dependencies {
+    implementation("dev.kolektiv.keel:core:0.0.1")
+}`,
+    },
+    {
+      id: "groovy",
+      label: "build.gradle",
+      lang: "groovy",
+      code: `repositories {
+    mavenCentral()
+    maven { url "https://repo.yuri.capital/repository/maven-releases/" }
+}
+
+dependencies {
+    implementation "dev.kolektiv.keel:core:0.0.1"
+}`,
+    },
+  ]}
+/>
+
+<Callout title="Ktor is a separate artifact">
+  A Ktor process also needs `dev.kolektiv.keel:ktor` and a server engine.
+  That wiring lives on the <a href={path("/docs/getting-started/host")}>Host (Ktor)</a> page — not here.
+</Callout>
+
+## Snapshots instead
+
+If you are tracking `*-SNAPSHOT*` builds, swap the URL. Do not keep
+releases on the classpath at the same time.
+
+```
+https://repo.yuri.capital/repository/maven-snapshots/
+```
+
+Publishers write to `keel-maven` (grouped) plus one of those two. You only
+need the consumer URL you chose.
+
+Next: <a href={path("/docs/getting-started/client")}>Client Setup</a> for
+the router, or skip ahead to
+<a href={path("/docs/getting-started/host")}>stand up a Ktor host</a>.

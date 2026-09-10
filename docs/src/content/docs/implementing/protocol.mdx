@@ -1,0 +1,135 @@
+---
+title: Wire protocol
+description: Seed JSON, headers, status codes, path grammar, CSRF. The contract another host implements.
+category: implementing
+order: 1
+---
+
+import { path } from "../../../lib/paths"
+
+Keel is a protocol. The Kotlin core and Ktor adapter are a reference
+implementation. This page is the wire format: what goes on the network, not
+how Ktor happens to bind it.
+
+Format coordinate: `keel/1`. Seed version field `v` defaults to `1`.
+
+## Seed JSON
+
+Document GETs embed the seed in `#__keel_seed`. Visits return the same object
+as `application/json`. Fields:
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `v` | yes (default 1) | Seed version |
+| `page` | yes | Page id |
+| `path` | yes | Absolute URL path, including query |
+| `params` | yes | Path captures |
+| `data` | yes | Page payload object |
+| `errors` | yes | `{ field: string[] }` |
+| `theme` | yes | `{ id, version }` of the selected pack |
+| `entry` | yes | URL of the page module |
+| `css` | yes | Stylesheet URLs |
+| `host` | yes | Mount selector, default `#__keel_root` |
+| `shared` | no | Cross-page bag |
+| `layout` | no | Layout module id |
+| `redirect` | no | Absolute path to follow |
+| `head` | no | `{ title, description, canonical, image, type }` |
+
+## Headers
+
+| Header | Direction | Meaning |
+| --- | --- | --- |
+| `X-Keel-Visit: true` | request | Return JSON, not the HTML shell |
+| `X-Keel-Only` | request | Comma-separated top-level `data` keys to keep |
+| `X-Keel-Except` | request | Comma-separated top-level `data` keys to drop |
+| `X-Keel-Partial` | response | Comma-separated keys actually retained |
+| `X-Keel-Theme` | request | Pack override id |
+| `X-Keel-Version` | response | Selected pack version |
+
+`only` / `except` apply **only on visits**. Document GETs always return the
+full seed — they are the SEO unit. The client shallow-merges a partial
+`data` object over the previously mounted page's `data`. Partial responses
+must not be written to the prefetch cache.
+
+## Status codes
+
+| Code | When |
+| --- | --- |
+| **200** | Document, visit, or successful action |
+| **404** | Unknown page or unknown action. Page 404s still return a seed when a not-found page is configured |
+| **422** | Validation. Visits return a seed with `errors`. Actions return `{ "errors": { … } }` |
+| **403** | CSRF rejection. `{ "errors": { "csrf": ["…"] } }` |
+| **405** | HTTP method not declared on the page |
+
+## Pack schema
+
+`GET /__keel/schema` is the machine-readable contract. A running host emits
+the same `keel/1` JSON Typegen writes offline:
+
+```json
+{
+  "format": "keel/1",
+  "pagesName": "Pages",
+  "pages": {
+    "harbor.home": {
+      "type": "HomePage",
+      "path": "/",
+      "methods": [
+        "GET"
+      ]
+    }
+  },
+  "actions": {
+    "harbor.setName": {
+      "in": "SetNameIn",
+      "out": "SetNameOut"
+    }
+  },
+  "types": {
+    "HomePage": {
+      "kind": "object",
+      "fields": {
+        "feed": "FeedItem[]"
+      }
+    }
+  }
+}
+```
+
+`keel-scaffold <origin> <dir>` fetches this URL and writes blank pack pages.
+See <a href={path("/docs/implementing/typegen")}>Typegen</a>.
+
+## Actions
+
+`POST /__keel/action/{id}` with a JSON body. Success: `{ "data": … }`.
+Validation: 422 `{ "errors": … }`. Unknown id: 404.
+
+## Path grammar
+
+Owned by Keel, not inherited from a framework:
+
+- `{name}` — required segment
+- `{name?}` — optional trailing segment
+- `{name...}` — tailcard (remainder, possibly empty)
+- anything else is a literal
+
+Tailcards and optionals must be last. Duplicate names are rejected. Paths
+must be absolute. When several patterns match, **specificity** wins:
+literal > required param > optional > tailcard. That is why `/p/new` beats
+`/p/{slug}` beats `/p/{rest...}`.
+
+Pages default to **GET**. POST/PUT/PATCH/DELETE are opt-in on the binding.
+`/__keel/navigate` is a compatibility proxy and honours the same method set.
+
+## CSRF
+
+Writes (anything other than GET/HEAD/OPTIONS) are allowed when they carry a
+non-CORS-simple marker — `Content-Type: application/json` or `X-Keel-Visit`
+— **and** `Origin` / `Sec-Fetch-Site` is same-origin or allowlisted. The
+policy lives in `dev.kolektiv.keel.security` so a non-Ktor host can reuse it.
+Hosts should set session cookies `SameSite=Lax`.
+
+See <a href={path("/docs/implementing/host-adapter")}>Host adapter</a> for
+the server checklist and
+<a href={path("/docs/implementing/pack-adapter")}>Pack adapter</a> for the
+client module contract.
