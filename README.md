@@ -36,9 +36,9 @@ the JS workspace on Node 22. Implementing-Keel guides live under
 
 Consumers resolve **one** Maven repo — `maven-releases` for numbered
 versions, or `maven-snapshots` for `*-SNAPSHOT*` — never both. npm is the
-same split (`npm-releases` / `npm-snapshots`). Maintainers publish with
-one Nexus login to `keel-maven` + `keel-npm` (grouped) plus the matching
-releases or snapshots repo. Credentials: GitHub Actions secrets
+same split (`npm-releases` / `npm-snapshots` groups). Maintainers publish
+Maven to `keel-maven` plus the matching hosted Maven repo, and npm only to
+hosted `keel-npm` (groups reject PUT). Credentials: GitHub Actions secrets
 `YURI_CAPITAL_REPO_USERNAME` / `YURI_CAPITAL_REPO_PASSWORD`, or the same
 names as env, or `keel.publishing.yuriCapitalRepoUsername` /
 `keel.publishing.yuriCapitalRepoPassword` in `~/.gradle/gradle.properties`.

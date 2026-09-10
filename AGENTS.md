@@ -90,10 +90,11 @@ Maven (`./gradlew :lib:publish :ktor:publish`) always goes to
 `SNAPSHOT` also go to `…/maven-snapshots/`; otherwise also to
 `…/maven-releases/`.
 
-npm (`bash .github/scripts/publish-npm.sh`) always goes to
-`https://repo.yuri.capital/repository/keel-npm/`, plus `npm-snapshots` or
-`npm-releases`. Workflow: `.github/workflows/publish.yml` (tag `v*` or
-`workflow_dispatch`).
+npm (`bash .github/scripts/publish-npm.sh`) publishes only to the hosted
+repo `https://repo.yuri.capital/repository/keel-npm/`. `npm-releases` and
+`npm-snapshots` are Nexus **groups** (read-only). Consumers resolve from
+one of those groups; add `keel-npm` as a group member in Nexus. Workflow:
+`.github/workflows/publish.yml` (tag `v*` or `workflow_dispatch`).
 
 **Credentials (never commit values).** Same Nexus login for Maven and npm:
 
