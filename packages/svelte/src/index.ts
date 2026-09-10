@@ -1,9 +1,9 @@
-export { keel, type KeelActionParams } from "./action.ts"
-export { page } from "./page.ts"
-export { useForm, type FormState } from "./useForm.ts"
-export { applyHead, fromPageHead, setTitle, syncHead, type HeadInput } from "./head.ts"
+export { keel, type KeelActionParams } from "./action.js"
+export { page } from "./page.js"
+export { useForm, type FormState } from "./useForm.svelte.js"
+export { applyHead, fromPageHead, setTitle, syncHead, type HeadInput } from "./head.js"
 export { router } from "@kolektiv/keel"
-export { bootstrap } from "./bootstrap.ts"
+export { bootstrap } from "./bootstrap.js"
 export {
   getQueryClient,
   hydrateKeelQuery,
@@ -11,7 +11,7 @@ export {
   useAction,
   useKeelPageQuery,
   type UseActionOptions,
-} from "./query.ts"
+} from "./query.js"
 export { ActionError } from "@kolektiv/keel"
 
 export { default as Link } from "./Link.svelte"

@@ -4,32 +4,37 @@
   "description": "Keel Svelte 5 bindings — Link, Form, Head, page(), useForm, useAction.",
   "type": "module",
   "license": "Apache-2.0",
-  "svelte": "./src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://repo.yuri.capital/repository/keel-npm/"
+  },
+  "svelte": "./dist/index.js",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "svelte": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./mount": {
-      "types": "./src/mount.ts",
-      "svelte": "./src/mount.ts",
-      "import": "./src/mount.ts",
-      "default": "./src/mount.ts"
+      "types": "./dist/mount.d.ts",
+      "svelte": "./dist/mount.js",
+      "import": "./dist/mount.js",
+      "default": "./dist/mount.js"
     },
     "./bootstrap": {
-      "types": "./src/bootstrap.ts",
-      "svelte": "./src/bootstrap.ts",
-      "import": "./src/bootstrap.ts",
-      "default": "./src/bootstrap.ts"
+      "types": "./dist/bootstrap.d.ts",
+      "svelte": "./dist/bootstrap.js",
+      "import": "./dist/bootstrap.js",
+      "default": "./dist/bootstrap.js"
     }
   },
-  "files": ["src"],
+  "files": ["dist"],
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc --noEmit -p tsconfig.json",
-    "test": "node --experimental-strip-types --test src/*.test.ts"
+    "typecheck": "svelte-package -i src -o dist",
+    "build": "svelte-package -i src -o dist",
+    "prepare": "pnpm build",
+    "test": "node --experimental-strip-types --test test/*.test.ts"
   },
   "peerDependencies": {
     "@kolektiv/keel": "workspace:*",
@@ -39,6 +44,7 @@
   },
   "devDependencies": {
     "@kolektiv/keel": "workspace:*",
+    "@sveltejs/package": "^2.3.11",
     "@tanstack/query-core": "^5.66.0",
     "@tanstack/svelte-query": "^5.66.0",
     "svelte": "^5.16.0",

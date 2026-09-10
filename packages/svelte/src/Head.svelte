@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { applyHead } from "./head.ts"
-  import { page } from "./page.ts"
+  import { applyHead } from "./head.js"
+  import { page } from "./page.js"
   import type { Snippet } from "svelte"
 
   let {

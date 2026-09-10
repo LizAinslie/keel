@@ -1,5 +1,5 @@
 import { bootstrap as start, subscribe, type RouterConfig } from "@kolektiv/keel"
-import { getQueryClient, hydrateKeelQuery } from "./query.ts"
+import { getQueryClient, hydrateKeelQuery } from "./query.js"
 
 export async function bootstrap(options: RouterConfig = {}): Promise<void> {
   getQueryClient()
