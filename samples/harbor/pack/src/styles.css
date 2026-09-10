@@ -87,6 +87,11 @@ h1 {
   margin: 0.35rem 0 0.75rem;
 }
 
+h2 {
+  font-size: 1.15rem;
+  margin: 2rem 0 0.5rem;
+}
+
 .lede,
 .entry p,
 .copy {
@@ -142,6 +147,7 @@ h1 {
 }
 
 .search button,
+.stack button,
 .back {
   background: var(--surface);
   color: var(--text);
@@ -150,6 +156,61 @@ h1 {
   padding: 0.55rem 0.9rem;
   cursor: pointer;
   font: inherit;
+}
+
+.search button:disabled,
+.stack button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.25rem 0 2rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field label {
+  color: var(--sub);
+  font-size: 0.85rem;
+}
+
+.field input,
+.field textarea {
+  background: var(--mantle);
+  color: var(--text);
+  border: 1px solid var(--surface);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+}
+
+.field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.error {
+  color: var(--flamingo);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.log {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0 0;
+}
+
+.log li + li {
+  margin-top: 1.25rem;
 }
 
 .entry time {

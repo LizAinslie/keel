@@ -3,4 +3,11 @@ export default {
   compilerOptions: {
     runes: true,
   },
+  vitePlugin: {
+    dynamicCompileOptions({ filename }) {
+      if (filename.includes("node_modules")) {
+        return { runes: false }
+      }
+    },
+  },
 }

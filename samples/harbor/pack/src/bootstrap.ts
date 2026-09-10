@@ -1,3 +1,3 @@
-import { bootstrap } from "@kolektiv/keel"
+import { bootstrap } from "@kolektiv/keel-svelte"
 
 void bootstrap()

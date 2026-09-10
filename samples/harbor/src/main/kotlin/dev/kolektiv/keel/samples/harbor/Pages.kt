@@ -1,49 +1,58 @@
 package dev.kolektiv.keel.samples.harbor
 
+import dev.kolektiv.keel.KeelType
 import kotlinx.serialization.Serializable
 
+@KeelType
 @Serializable
-data class PostSummary(
-    val slug: String,
-    val title: String,
-    val excerpt: String,
-    val published: String,
+data class UserRef(
+    val id: String,
+    val displayName: String,
 )
 
+@KeelType
+@Serializable
+data class FeedItem(
+    val id: String,
+    val userId: String,
+    val displayName: String,
+    val body: String,
+    val at: String,
+)
+
+@KeelType("harbor.home")
 @Serializable
 data class HomePage(
-    val kicker: String,
-    val title: String,
-    val lede: String,
-    val posts: List<PostSummary>,
+    val viewer: UserRef?,
+    val feed: List<FeedItem>,
 )
 
+@KeelType("harbor.user")
 @Serializable
-data class ListPage(
-    val title: String,
-    val query: String,
-    val posts: List<PostSummary>,
+data class UserPage(
+    val user: UserRef,
+    val messages: List<FeedItem>,
 )
 
-@Serializable
-data class PostPage(
-    val slug: String,
-    val title: String,
-    val body: String,
-    val published: String,
-)
-
-@Serializable
-data class AboutPage(
-    val title: String,
-    val copy: String,
-    val pack: String,
-)
-
+@KeelType("harbor.notFound")
 @Serializable
 data class NotFoundPage(
     val path: String,
-    val title: String = "Not on this chart",
+    val title: String = "Not on this board",
 )
 
-fun Entry.summary(): PostSummary = PostSummary(slug, title, excerpt, published)
+@KeelType
+@Serializable
+data class SetNameIn(val displayName: String)
+
+@KeelType
+@Serializable
+data class SetNameOut(val user: UserRef)
+
+@KeelType
+@Serializable
+data class PostMessageIn(val body: String)
+
+@KeelType
+@Serializable
+data class PostMessageOut(val message: FeedItem)
