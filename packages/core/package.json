@@ -1,6 +1,6 @@
 {
   "name": "@kolektiv/keel",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Keel host router — visits, seed, history, prefetch.",
   "type": "module",
   "license": "Apache-2.0",
