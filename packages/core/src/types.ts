@@ -3,6 +3,7 @@ export const KEEL_SEED_VERSION = 1
 export const KEEL_DEFAULT_HOST = "#__keel_root"
 export const KEEL_SEED_ELEMENT_ID = "__keel_seed"
 export const KEEL_NAVIGATE_PATH = "/__keel/navigate"
+export const KEEL_ACTION_PATH = "/__keel/action"
 
 export const KEEL_HEADERS = {
   visit: "X-Keel-Visit",
@@ -20,6 +21,14 @@ export interface KeelThemeRef {
   version: string
 }
 
+export interface PageHead {
+  title: string
+  description?: string | null
+  canonical?: string | null
+  image?: string | null
+  type?: string | null
+}
+
 export interface KeelSeed<T = unknown> {
   v: number
   page: string
@@ -34,6 +43,7 @@ export interface KeelSeed<T = unknown> {
   host: string
   layout?: string | null
   redirect?: string | null
+  head?: PageHead | null
 }
 
 export interface KeelPageEntry {

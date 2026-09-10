@@ -6,7 +6,6 @@ import { cacheSeed, readSeed, warmModule } from "./prefetch.ts"
 import { beginVisit, endVisit, getPage, peekPage, setPage } from "./store.ts"
 import {
   KEEL_HEADERS,
-  KEEL_NAVIGATE_PATH,
   type KeelSeed,
   type Method,
   type PageModule,
@@ -50,9 +49,14 @@ function buildUrl(href: string, method: Method, data: VisitOptions["data"]): str
   return url.pathname + url.search
 }
 
+export function visitRequestUrl(href: string, navigatePath?: string): string {
+  if (navigatePath) return `${navigatePath}?to=${encodeURIComponent(href)}`
+  return href
+}
+
 async function fetchSeed(href: string, options: VisitOptions, signal: AbortSignal): Promise<KeelSeed> {
   const method = options.method ?? "get"
-  const url = `${config.navigatePath ?? KEEL_NAVIGATE_PATH}?to=${encodeURIComponent(href)}`
+  const url = visitRequestUrl(href, config.navigatePath)
   const headers = new Headers(options.headers)
   headers.set(KEEL_HEADERS.visit, "true")
   headers.set("Accept", "application/json")
@@ -70,9 +74,9 @@ async function fetchSeed(href: string, options: VisitOptions, signal: AbortSigna
   }
 
   const response = await fetch(url, { method: method.toUpperCase(), headers, body, signal })
-  if (response.status === 422) {
+  if (response.status === 422 || response.status === 404) {
     const seed = (await response.json()) as KeelSeed
-    return seed
+    if (seed && typeof seed.page === "string") return seed
   }
   if (!response.ok) {
     throw new Error(`Keel visit failed (${response.status}) for ${href}`)

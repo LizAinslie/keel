@@ -1,4 +1,5 @@
 export {
+  KEEL_ACTION_PATH,
   KEEL_DEFAULT_HOST,
   KEEL_FORMAT,
   KEEL_HEADERS,
@@ -11,6 +12,7 @@ export {
   type KeelThemeRef,
   type Method,
   type PageContext,
+  type PageHead,
   type PageModule,
   type PendingVisit,
   type PrefetchMode,
@@ -20,7 +22,8 @@ export {
   type VisitOptions,
 } from "./types.ts"
 
-export { bootstrap, router } from "./router.ts"
+export { bootstrap, router, type RouterConfig } from "./router.ts"
 export { getPage, getProcessing, peekPage, setPage, subscribe, subscribeProcessing } from "./store.ts"
 export { toContext } from "./context.ts"
 export { on as onRouterEvent } from "./events.ts"
+export { action, ActionError } from "./action.ts"

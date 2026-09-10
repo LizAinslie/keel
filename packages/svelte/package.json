@@ -1,7 +1,7 @@
 {
   "name": "@kolektiv/keel-svelte",
   "version": "0.1.0",
-  "description": "Keel Svelte 5 bindings — Link, Form, Head, page(), useForm.",
+  "description": "Keel Svelte 5 bindings — Link, Form, Head, page(), useForm, useAction.",
   "type": "module",
   "license": "Apache-2.0",
   "svelte": "./src/index.ts",
@@ -11,6 +11,18 @@
       "svelte": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./mount": {
+      "types": "./src/mount.ts",
+      "svelte": "./src/mount.ts",
+      "import": "./src/mount.ts",
+      "default": "./src/mount.ts"
+    },
+    "./bootstrap": {
+      "types": "./src/bootstrap.ts",
+      "svelte": "./src/bootstrap.ts",
+      "import": "./src/bootstrap.ts",
+      "default": "./src/bootstrap.ts"
     }
   },
   "files": ["src"],
@@ -21,10 +33,14 @@
   },
   "peerDependencies": {
     "@kolektiv/keel": "workspace:*",
+    "@tanstack/query-core": "^5.0.0",
+    "@tanstack/svelte-query": "^5.0.0",
     "svelte": "^5.0.0"
   },
   "devDependencies": {
     "@kolektiv/keel": "workspace:*",
+    "@tanstack/query-core": "^5.66.0",
+    "@tanstack/svelte-query": "^5.66.0",
     "svelte": "^5.16.0",
     "typescript": "^5.7.0"
   }
