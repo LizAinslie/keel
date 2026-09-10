@@ -4,10 +4,16 @@ import dev.kolektiv.keel.Keel
 import dev.kolektiv.keel.KeelJson
 import dev.kolektiv.keel.bundle.FrontendBundle
 import dev.kolektiv.keel.page.PageBinding
+import dev.kolektiv.keel.page.PageMethod
 import dev.kolektiv.keel.page.PageRegistry
+import dev.kolektiv.keel.security.CsrfRequest
+import dev.kolektiv.keel.security.CsrfVerdict
+import dev.kolektiv.keel.security.SameOriginCsrfPolicy
 import dev.kolektiv.keel.seed.KeelSeed
 import dev.kolektiv.keel.seed.KeelThemeRef
 import dev.kolektiv.keel.seed.PageHead
+import dev.kolektiv.keel.seed.SeedFilter
+import dev.kolektiv.keel.typegen.Typegen
 import dev.kolektiv.keel.theme.ChainThemeResolver
 import dev.kolektiv.keel.theme.MissingPageInThemeException
 import dev.kolektiv.keel.theme.ThemeRequest
@@ -22,6 +28,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.createRouteScopedPlugin
 import io.ktor.server.request.header
+import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
@@ -33,8 +40,11 @@ import io.ktor.server.routing.RouteSelector
 import io.ktor.server.routing.RouteSelectorEvaluation
 import io.ktor.server.routing.RoutingResolveContext
 import io.ktor.server.routing.application
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
+import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
+import io.ktor.server.routing.put
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -76,18 +86,17 @@ internal class KeelEngine(private val config: KeelConfig) {
     fun install(application: Application) {
         application.routing {
             get("$packPrefix/{bundleId}/{entry...}") { serveAsset(call) }
+            get(Keel.SCHEMA_PATH) { respondSchema(call) }
             post("${Keel.ACTION_PATH}/{id}") { respondAction(call) }
             if (config.registry.pages.isNotEmpty()) {
                 get(Keel.NAVIGATE_PATH) { respondTarget(call) }
                 post(Keel.NAVIGATE_PATH) { respondTarget(call) }
+                put(Keel.NAVIGATE_PATH) { respondTarget(call) }
+                patch(Keel.NAVIGATE_PATH) { respondTarget(call) }
+                delete(Keel.NAVIGATE_PATH) { respondTarget(call) }
                 for (binding in config.registry.pages) {
                     if (binding.path.startsWith("/__")) continue
-                    get(binding.path) {
-                        respondBinding(call, binding, call.request.path(), call.request.queryParameters)
-                    }
-                    post(binding.path) {
-                        respondBinding(call, binding, call.request.path(), call.request.queryParameters)
-                    }
+                    bindPage(binding)
                 }
                 get("{path...}") {
                     val parts = call.parameters.getAll("path").orEmpty()
@@ -146,7 +155,41 @@ internal class KeelEngine(private val config: KeelConfig) {
             redirect = redirect,
             head = head,
         )
-        respondSeed(call, seed, status, bundle)
+        val visit = isVisit(call)
+        val filtered = if (visit) applyPartial(call, seed) else seed
+        respondSeed(call, filtered, status, bundle)
+    }
+
+    private fun applyPartial(call: ApplicationCall, seed: KeelSeed): KeelSeed {
+        val only = parseHeaderSet(call.request.header(KeelHeaders.ONLY))
+        val except = parseHeaderSet(call.request.header(KeelHeaders.EXCEPT))
+        if (only.isEmpty() && except.isEmpty()) return seed
+        val data = SeedFilter.filterData(seed.data, only, except)
+        val retained = (data as? JsonObject)?.keys?.joinToString(",") ?: ""
+        call.response.header(KeelHeaders.PARTIAL, retained)
+        return seed.copy(data = data)
+    }
+
+    private fun io.ktor.server.routing.Route.bindPage(binding: PageBinding) {
+        for (method in binding.methods) {
+            when (method) {
+                PageMethod.GET -> get(binding.path) {
+                    respondBinding(call, binding, call.request.path(), call.request.queryParameters)
+                }
+                PageMethod.POST -> post(binding.path) {
+                    respondBinding(call, binding, call.request.path(), call.request.queryParameters)
+                }
+                PageMethod.PUT -> put(binding.path) {
+                    respondBinding(call, binding, call.request.path(), call.request.queryParameters)
+                }
+                PageMethod.PATCH -> patch(binding.path) {
+                    respondBinding(call, binding, call.request.path(), call.request.queryParameters)
+                }
+                PageMethod.DELETE -> delete(binding.path) {
+                    respondBinding(call, binding, call.request.path(), call.request.queryParameters)
+                }
+            }
+        }
     }
 
     private suspend fun serveAsset(call: ApplicationCall) {
@@ -158,6 +201,18 @@ internal class KeelEngine(private val config: KeelConfig) {
         val bundle = bundlesById[bundleId]
         if (bundle == null || entry.isEmpty() || !bundle.contains(entry)) {
             call.respond(HttpStatusCode.NotFound)
+            return
+        }
+        val etag = bundle.etagFor(entry)
+        val cacheControl = if (isImmutableAsset(entry)) {
+            "public, max-age=31536000, immutable"
+        } else {
+            "public, max-age=0, must-revalidate"
+        }
+        call.response.header("ETag", etag)
+        call.response.header("Cache-Control", cacheControl)
+        if (etagMatches(call.request.header("If-None-Match"), etag)) {
+            call.respond(HttpStatusCode.NotModified)
             return
         }
         val type = ContentType.defaultForFilePath(entry)
@@ -184,13 +239,47 @@ internal class KeelEngine(private val config: KeelConfig) {
         path: String,
         query: Parameters,
     ) {
-        val params = PageRegistry.params(binding.path, path)
+        val method = PageMethod.from(call.request.httpMethod.value)
+        if (method == null || method !in binding.methods) {
+            call.respond(HttpStatusCode.MethodNotAllowed)
+            return
+        }
+        if (!guardCsrf(call)) return
+        runLoader(call, binding, path, query, HttpStatusCode.OK, recurseMissing = true)
+    }
+
+    private suspend fun respondNotFound(call: ApplicationCall, path: String, query: Parameters) {
+        val notFoundId = config.notFoundPageId ?: bundleOrder.firstOrNull { it.manifest.notFound != null }?.let { bundle ->
+            bundle.manifest.pages.entries.find { it.value.module == bundle.manifest.notFound }?.key
+                ?: "not-found"
+        }
+        val binding = notFoundId?.let { id ->
+            runCatching { config.registry.get(id) }.getOrNull()
+        }
+        if (binding == null) {
+            call.respondText("Not found", ContentType.Text.Plain, HttpStatusCode.NotFound)
+            return
+        }
+        runLoader(call, binding, path, query, HttpStatusCode.NotFound, recurseMissing = false)
+    }
+
+    private suspend fun runLoader(
+        call: ApplicationCall,
+        binding: PageBinding,
+        path: String,
+        query: Parameters,
+        status: HttpStatusCode,
+        recurseMissing: Boolean,
+    ) {
+        val params = PageRegistry.params(binding.path, path).ifEmpty {
+            if (status == HttpStatusCode.NotFound) mapOf("path" to path) else emptyMap()
+        }
         val request = PageRequest(call, binding, path, params, query)
         try {
             val handler = config.handlers[binding.id] ?: throw KeelUnknownHandlerException(binding.id)
             val data = request.handler()
             val bundle = bundleFor(call, binding.id, path)
-            respond(call, bundle, binding.id, data, binding.serializer, params, HttpStatusCode.OK, path, query, head = request.head)
+            respond(call, bundle, binding.id, data, binding.serializer, params, status, path, query, head = request.head)
         } catch (invalid: PageValidationException) {
             val bundle = bundleFor(call, binding.id, path)
             respond(
@@ -222,28 +311,17 @@ internal class KeelEngine(private val config: KeelConfig) {
                 head = request.head,
             )
         } catch (missing: PageMissingException) {
+            if (!recurseMissing) {
+                call.respondText("Not found", ContentType.Text.Plain, HttpStatusCode.NotFound)
+                return
+            }
             respondNotFound(call, missing.path, query)
         }
     }
 
-    private suspend fun respondNotFound(call: ApplicationCall, path: String, query: Parameters) {
-        val notFoundId = config.notFoundPageId ?: bundleOrder.firstOrNull { it.manifest.notFound != null }?.let { bundle ->
-            bundle.manifest.pages.entries.find { it.value.module == bundle.manifest.notFound }?.key
-                ?: "not-found"
-        }
-        val binding = notFoundId?.let { id ->
-            runCatching { config.registry.get(id) }.getOrNull()
-        }
-        if (binding == null) {
-            call.respondText("Not found", ContentType.Text.Plain, HttpStatusCode.NotFound)
-            return
-        }
-        val params = PageRegistry.params(binding.path, path).ifEmpty { mapOf("path" to path) }
-        val handler = config.handlers[binding.id] ?: throw KeelUnknownHandlerException(binding.id)
-        val request = PageRequest(call, binding, path, params, query)
-        val data = request.handler()
-        val bundle = bundleFor(call, binding.id, path)
-        respond(call, bundle, binding.id, data, binding.serializer, params, HttpStatusCode.NotFound, path, query, head = request.head)
+    private suspend fun respondSchema(call: ApplicationCall) {
+        val raw = Typegen.emitJson(config.registry, config.actionRegistry)
+        call.respondText(raw, ContentType.Application.Json, HttpStatusCode.OK)
     }
 
     private suspend fun respondAction(call: ApplicationCall) {
@@ -257,6 +335,7 @@ internal class KeelEngine(private val config: KeelConfig) {
             call.respond(HttpStatusCode.NotFound)
             return
         }
+        if (!guardCsrf(call)) return
         try {
             val text = call.receiveText()
             val raw = if (text.isBlank()) "{}" else text
@@ -316,6 +395,40 @@ internal class KeelEngine(private val config: KeelConfig) {
     private fun defaultThemeId(): String =
         config.defaultThemeId ?: bundleOrder.firstOrNull()?.id ?: throw KeelMissingBundleException()
 
+    private fun csrfPolicy() = config.csrf ?: SameOriginCsrfPolicy(config.csrfAllowedOrigins)
+
+    private suspend fun guardCsrf(call: ApplicationCall): Boolean {
+        val verdict = csrfPolicy().check(
+            CsrfRequest(
+                method = call.request.httpMethod.value,
+                contentType = call.request.header("Content-Type"),
+                origin = call.request.header("Origin"),
+                secFetchSite = call.request.header("Sec-Fetch-Site"),
+                host = call.request.header("Host").orEmpty(),
+                keelVisit = call.request.header(KeelHeaders.VISIT).equals("true", ignoreCase = true),
+            ),
+        )
+        return when (verdict) {
+            is CsrfVerdict.Allow -> true
+            is CsrfVerdict.Deny -> {
+                respondCsrfDenied(call, verdict.reason)
+                false
+            }
+        }
+    }
+
+    private suspend fun respondCsrfDenied(call: ApplicationCall, reason: String) {
+        val errors = JsonObject(
+            mapOf("csrf" to JsonArray(listOf(JsonPrimitive(reason)))),
+        )
+        val payload = JsonObject(mapOf("errors" to errors))
+        call.respondText(
+            KeelJson.codec.encodeToString(JsonObject.serializer(), payload),
+            ContentType.Application.Json,
+            HttpStatusCode.Forbidden,
+        )
+    }
+
     companion object {
         fun isVisit(call: ApplicationCall): Boolean {
             if (call.request.header(KeelHeaders.VISIT).equals("true", ignoreCase = true)) return true
@@ -334,6 +447,22 @@ internal class KeelEngine(private val config: KeelConfig) {
         fun encodeData(serializer: KSerializer<*>, value: Any): JsonElement {
             @Suppress("UNCHECKED_CAST")
             return KeelJson.codec.encodeToJsonElement(serializer as KSerializer<Any>, value)
+        }
+
+        internal fun parseHeaderSet(value: String?): Set<String> =
+            value?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: emptySet()
+
+        internal fun isImmutableAsset(entry: String): Boolean {
+            val path = entry.replace('\\', '/')
+            if (path.startsWith("assets/")) return true
+            return path.startsWith("chunks/") && path.contains("-") && path.endsWith(".js")
+        }
+
+        internal fun etagMatches(ifNoneMatch: String?, etag: String): Boolean {
+            if (ifNoneMatch == null) return false
+            val header = ifNoneMatch.trim()
+            if (header == "*") return true
+            return header.split(',').map { it.trim() }.any { it == etag || it == "W/$etag" }
         }
     }
 }

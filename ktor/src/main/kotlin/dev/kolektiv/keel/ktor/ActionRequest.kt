@@ -2,6 +2,8 @@ package dev.kolektiv.keel.ktor
 
 import dev.kolektiv.keel.KeelJson
 import io.ktor.server.application.ApplicationCall
+import kotlinx.coroutines.asContextElement
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
@@ -30,14 +32,7 @@ class ActionRequest(
         fun current(): ActionRequest =
             current.get() ?: error("not inside a Keel action")
 
-        internal inline fun <T> with(request: ActionRequest, block: () -> T): T {
-            val previous = current.get()
-            current.set(request)
-            return try {
-                block()
-            } finally {
-                if (previous == null) current.remove() else current.set(previous)
-            }
-        }
+        internal suspend fun <T> with(request: ActionRequest, block: suspend () -> T): T =
+            withContext(current.asContextElement(request)) { block() }
     }
 }

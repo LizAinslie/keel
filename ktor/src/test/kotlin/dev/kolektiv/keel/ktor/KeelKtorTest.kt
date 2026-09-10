@@ -3,6 +3,7 @@ package dev.kolektiv.keel.ktor
 import dev.kolektiv.keel.Keel
 import dev.kolektiv.keel.KeelJson
 import dev.kolektiv.keel.bundle.FrontendBundle
+import dev.kolektiv.keel.page.PageMethod
 import dev.kolektiv.keel.seed.KeelSeed
 import dev.kolektiv.keel.visit.KeelHeaders
 import io.ktor.client.request.get
@@ -10,6 +11,8 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
@@ -120,7 +123,7 @@ class KeelKtorTest {
                     if (params.getValue("slug") == "missing") throw PageMissingException(path)
                     PostPage(slug = params.getValue("slug"), title = "Entry")
                 }
-                page<FormPage>("form", "/form") {
+                page<FormPage>("form", "/form", methods = setOf(PageMethod.GET, PageMethod.POST)) {
                     head("Form page")
                     if (method == HttpMethod.Post) {
                         val body = receiveJson()
@@ -140,6 +143,13 @@ class KeelKtorTest {
                         throw PageValidationException(mapOf("message" to listOf("required")), Unit)
                     }
                     EchoOut(input.message)
+                }
+                action<EchoIn, EchoOut>("hop") { input ->
+                    withContext(Dispatchers.IO) {
+                        val current = ActionRequest.current()
+                        require(current.call === call)
+                        EchoOut(input.message)
+                    }
                 }
             }
         }
@@ -166,6 +176,8 @@ class KeelKtorTest {
         assertTrue(body.contains("rel=\"canonical\""))
         assertTrue(body.contains("application/ld+json"))
         assertTrue(body.contains("<noscript>"))
+        assertTrue(body.contains("rel=\"modulepreload\""))
+        assertTrue(body.contains("data-keel-css"))
     }
 
     @Test
@@ -219,6 +231,111 @@ class KeelKtorTest {
             setBody("{}")
         }
         assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `schema is served without the pages DSL`() = testApplication {
+        writePack()
+        val bundle = FrontendBundle.fromDirectory(pack)
+        application {
+            keel { this.bundle = bundle }
+        }
+        val response = client.get(Keel.SCHEMA_PATH)
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(response.bodyAsText().contains("\"pages\""))
+    }
+
+    @Test
+    fun `schema endpoint lists pages and actions`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.get(Keel.SCHEMA_PATH)
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(response.headers["Content-Type"]?.contains("application/json") == true)
+        val body = response.bodyAsText()
+        assertTrue(body.contains("\"format\": \"keel/1\""))
+        assertTrue(body.contains("\"home\""))
+        assertTrue(body.contains("\"path\": \"/\""))
+        assertTrue(body.contains("\"echo\""))
+        assertTrue(body.contains("\"in\": \"EchoIn\""))
+        assertTrue(body.contains("\"types\""))
+    }
+
+    @Test
+    fun `action ThreadLocal survives a dispatcher hop`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("${Keel.ACTION_PATH}/hop") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"message":"ok"}""")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(response.bodyAsText().contains("ok"))
+    }
+
+    @Test
+    fun `action with text plain is csrf forbidden`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("${Keel.ACTION_PATH}/echo") {
+            contentType(ContentType.Text.Plain)
+            setBody("""{"message":"x"}""")
+        }
+        assertEquals(HttpStatusCode.Forbidden, response.status)
+        assertTrue(response.bodyAsText().contains("\"errors\""))
+    }
+
+    @Test
+    fun `visit only header filters seed data and sets partial`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.get("/") {
+            header(KeelHeaders.VISIT, "true")
+            header(KeelHeaders.ONLY, "greeting")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals("greeting", response.headers[KeelHeaders.PARTIAL])
+        val seed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), response.bodyAsText())
+        assertEquals(setOf("greeting"), (seed.data as kotlinx.serialization.json.JsonObject).keys)
+    }
+
+    @Test
+    fun `document get is not a partial`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.get("/") {
+            header(KeelHeaders.ONLY, "greeting")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(null, response.headers[KeelHeaders.PARTIAL])
+        assertTrue(response.bodyAsText().contains("hello"))
+    }
+
+    @Test
+    fun `post to a get-only page is 405`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.post("/") {
+            contentType(ContentType.Application.Json)
+            setBody("{}")
+            header(KeelHeaders.VISIT, "true")
+        }
+        assertEquals(HttpStatusCode.MethodNotAllowed, response.status)
+    }
+
+    @Test
+    fun `pack asset honors etag`() = testApplication {
+        writePack()
+        application { installSample() }
+        val first = client.get("/__keel/pack/harbor/assets/styles.css")
+        assertEquals(HttpStatusCode.OK, first.status)
+        val etag = first.headers["ETag"]
+        assertTrue(!etag.isNullOrBlank())
+        assertEquals("public, max-age=31536000, immutable", first.headers["Cache-Control"])
+        val again = client.get("/__keel/pack/harbor/assets/styles.css") {
+            header("If-None-Match", etag!!)
+        }
+        assertEquals(HttpStatusCode.NotModified, again.status)
     }
 
     @Test

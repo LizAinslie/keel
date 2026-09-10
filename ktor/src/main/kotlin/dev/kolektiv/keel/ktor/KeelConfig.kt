@@ -4,7 +4,9 @@ import dev.kolektiv.keel.Keel
 import dev.kolektiv.keel.action.ActionDiscovery
 import dev.kolektiv.keel.action.ActionRegistry
 import dev.kolektiv.keel.bundle.FrontendBundle
+import dev.kolektiv.keel.page.PageMethod
 import dev.kolektiv.keel.page.PageRegistry
+import dev.kolektiv.keel.security.CsrfPolicy
 import dev.kolektiv.keel.theme.ThemeResolver
 import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationCall
@@ -21,9 +23,10 @@ class PagesDsl @PublishedApi internal constructor(
     inline fun <reified T : Any> page(
         id: String,
         path: String,
+        methods: Set<PageMethod> = setOf(PageMethod.GET),
         noinline load: suspend PageRequest.() -> T,
     ) {
-        registry.page<T>(id, path)
+        registry.page<T>(id, path, methods)
         handlers[id] = load
     }
 }
@@ -52,6 +55,8 @@ class KeelConfig {
     var title: String = "Keel"
     var shared: SharedProvider? = null
     var notFoundPageId: String? = null
+    var csrf: CsrfPolicy? = null
+    var csrfAllowedOrigins: Set<String> = emptySet()
 
     @PublishedApi
     internal val registry: PageRegistry = PageRegistry()
@@ -81,7 +86,7 @@ class KeelConfig {
             for (discovered in ActionDiscovery.discover(host)) {
                 actionRegistry.register(discovered.binding)
                 actionHandlers[discovered.id] = { input ->
-                    ActionRequest.with(this) { discovered.invoke(input, extension = call) }
+                    discovered.invoke(input, extension = call)
                 }
             }
         }

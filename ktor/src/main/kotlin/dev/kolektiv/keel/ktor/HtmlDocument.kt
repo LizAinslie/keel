@@ -12,7 +12,7 @@ internal object HtmlDocument {
 
     fun render(title: String, seedJson: String, seed: KeelSeed, bootstrapUrl: String): String {
         val css = seed.css.joinToString("\n") { href ->
-            """<link rel="stylesheet" href="${escapeAttr(href)}">"""
+            """<link rel="stylesheet" href="${escapeAttr(href)}" data-keel-css>"""
         }
         val rootId = Keel.DEFAULT_HOST.removePrefix("#")
         val documentTitle = seed.head?.title ?: title
@@ -25,6 +25,10 @@ internal object HtmlDocument {
             appendHeadTags(this, documentTitle, seed.head, seed.path)
             if (css.isNotEmpty()) {
                 appendLine(css)
+            }
+            appendLine("""<link rel="modulepreload" href="${escapeAttr(bootstrapUrl)}">""")
+            if (seed.entry.isNotBlank()) {
+                appendLine("""<link rel="modulepreload" href="${escapeAttr(seed.entry)}">""")
             }
             appendLine("</head>")
             appendLine("<body>")
