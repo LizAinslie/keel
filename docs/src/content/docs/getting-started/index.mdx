@@ -33,6 +33,10 @@ Walkthrough: <a href={path("/docs/getting-started/server")}>server</a> →
 <a href={path("/docs/getting-started/pack")}>Svelte pack</a> →
 <a href={path("/docs/getting-started/first-page")}>first page</a>.
 
+## Where Keel sits
+
+Inertia4J speaks the Inertia SPA protocol over Ktor or Spring. Kinetica and Kilua keep the UI in Kotlin (SSR, islands, route meta). Keel keeps routes, page ids, and the typed seed on the host, and ships the UI as swappable Vite packs (`.feb`) that implement those ids. Same server contract, different frontends, including the page’s document head.
+
 ## The split
 
 - **Keel** — product, CLI, Maven group `dev.kolektiv.keel`
