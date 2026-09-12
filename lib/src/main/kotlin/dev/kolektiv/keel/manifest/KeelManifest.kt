@@ -22,11 +22,11 @@ data class KeelCompat(
 )
 
 /**
- * Theme pack manifest (`manifest.json` at the root of a `.feb` zip).
+ * Pack manifest (`manifest.json` at the root of a `.feb` zip).
  *
  * Pages are keyed by **stable page ids**, never URL paths. Paths live on the
- * host. A pack may implement a subset of ids; the host falls back to the
- * default pack, then `notFound`.
+ * host. A pack may implement a subset of ids; the host picks the pack at the
+ * call site and owns the `notFound` fallback.
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
@@ -51,6 +51,4 @@ data class KeelManifest(
     }
 
     fun page(pageId: String): KeelPageEntry? = pages[pageId]
-
-    fun implements(pageId: String): Boolean = pages.containsKey(pageId)
 }

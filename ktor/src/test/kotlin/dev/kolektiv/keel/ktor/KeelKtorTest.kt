@@ -3,6 +3,7 @@ package dev.kolektiv.keel.ktor
 import dev.kolektiv.keel.Keel
 import dev.kolektiv.keel.KeelJson
 import dev.kolektiv.keel.bundle.FrontendBundle
+import dev.kolektiv.keel.bundle.UnknownPageInBundleException
 import dev.kolektiv.keel.page.PageMethod
 import dev.kolektiv.keel.seed.KeelSeed
 import dev.kolektiv.keel.visit.KeelHeaders
@@ -19,6 +20,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.application.Application
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
@@ -524,5 +526,120 @@ class KeelKtorTest {
         val adminAsset = client.get("/__keel/pack/admin/bootstrap.js")
         assertEquals(HttpStatusCode.OK, adminAsset.status)
         assertEquals("export {}", adminAsset.bodyAsText())
+    }
+
+    @Test
+    fun `explicit pack wins over route scope`() = testApplication {
+        writePack(dir = pack, id = "shop", pages = mapOf("shop.item" to "pages/item.js"), notFound = null)
+        writePack(dir = extra, id = "admin", pages = mapOf("admin.home" to "pages/home.js"), notFound = null)
+        val shop = FrontendBundle.fromDirectory(pack)
+        val admin = FrontendBundle.fromDirectory(extra)
+        application {
+            keel {
+                bundles = listOf(shop, admin)
+                title = "Host"
+            }
+            routing {
+                keel(admin) {
+                    get("/explicit") {
+                        call.respondPage(shop, "shop.item", ShopItem("sku-1"))
+                    }
+                }
+            }
+        }
+        val body = client.get("/explicit").bodyAsText()
+        assertTrue(body.contains("/__keel/pack/shop/pages/item.js"))
+        assertTrue(!body.contains("/__keel/pack/admin/"))
+    }
+
+    @Test
+    fun `bundle-less respondPage resolves the single configured pack`() = testApplication {
+        writePack()
+        val bundle = FrontendBundle.fromDirectory(pack)
+        application {
+            keel {
+                this.bundle = bundle
+                title = "Harbor"
+            }
+            routing {
+                get("/alt") {
+                    call.respondPage("home", HomePage("hello"))
+                }
+            }
+        }
+        val html = client.get("/alt")
+        assertEquals(HttpStatusCode.OK, html.status)
+        val body = html.bodyAsText()
+        assertTrue(body.contains("/__keel/pack/harbor/pages/home.js"))
+        assertTrue(body.contains("hello"))
+
+        val visit = client.get("/alt") {
+            header(KeelHeaders.VISIT, "true")
+        }
+        val seed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), visit.bodyAsText())
+        assertEquals("home", seed.page)
+        assertEquals("/__keel/pack/harbor/pages/home.js", seed.entry)
+    }
+
+    @Test
+    fun `bundle-less respondPage without a pack fails clearly`() = testApplication {
+        var failure: Throwable? = null
+        application {
+            keel { }
+            routing {
+                get("/orphan") {
+                    failure = runCatching { call.respondPage("home", HomePage("hello")) }.exceptionOrNull()
+                    call.respondText("handled")
+                }
+            }
+        }
+        assertEquals(HttpStatusCode.OK, client.get("/orphan").status)
+        assertTrue(failure is MissingPackException)
+        assertTrue(failure?.message?.contains("route.keel(pack)") == true)
+    }
+
+    @Test
+    fun `bundle-less respondPage with multiple packs asks for a scope`() = testApplication {
+        writePack(dir = pack, id = "shop", pages = mapOf("shop.item" to "pages/item.js"), notFound = null)
+        writePack(dir = extra, id = "admin", pages = mapOf("admin.home" to "pages/home.js"), notFound = null)
+        val shop = FrontendBundle.fromDirectory(pack)
+        val admin = FrontendBundle.fromDirectory(extra)
+        var failure: Throwable? = null
+        application {
+            keel {
+                bundles = listOf(shop, admin)
+                title = "Host"
+            }
+            routing {
+                get("/orphan") {
+                    failure = runCatching { call.respondPage("shop.item", ShopItem("sku-1")) }.exceptionOrNull()
+                    call.respondText("handled")
+                }
+            }
+        }
+        assertEquals(HttpStatusCode.OK, client.get("/orphan").status)
+        assertTrue(failure is AmbiguousPackException)
+        assertTrue(failure?.message?.contains("shop, admin") == true)
+    }
+
+    @Test
+    fun `single configured pack must implement the page`() = testApplication {
+        writePack(dir = pack, id = "shop", pages = mapOf("shop.item" to "pages/item.js"), notFound = null)
+        val shop = FrontendBundle.fromDirectory(pack)
+        var failure: Throwable? = null
+        application {
+            keel {
+                this.bundle = shop
+                title = "Host"
+            }
+            routing {
+                get("/orphan") {
+                    failure = runCatching { call.respondPage("home", HomePage("hello")) }.exceptionOrNull()
+                    call.respondText("handled")
+                }
+            }
+        }
+        assertEquals(HttpStatusCode.OK, client.get("/orphan").status)
+        assertTrue(failure is UnknownPageInBundleException)
     }
 }

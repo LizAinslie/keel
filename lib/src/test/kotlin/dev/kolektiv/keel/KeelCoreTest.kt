@@ -14,8 +14,6 @@ import dev.kolektiv.keel.seed.KeelSeed
 import dev.kolektiv.keel.seed.KeelThemeRef
 import dev.kolektiv.keel.seed.PageHead
 import dev.kolektiv.keel.seed.SeedFilter
-import dev.kolektiv.keel.theme.ChainThemeResolver
-import dev.kolektiv.keel.theme.ThemeRequest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -65,15 +63,9 @@ class KeelCoreTest {
     }
 
     @Test
-    fun `theme chain falls back when a pack omits a page`() {
-        val midnight = KeelManifest(
+    fun `manifest looks up pages by stable id`() {
+        val manifest = KeelManifest(
             id = "midnight",
-            version = "1.0.0",
-            framework = "svelte",
-            pages = mapOf("blog.home" to KeelPageEntry("pages/blog.home.js")),
-        )
-        val fallback = KeelManifest(
-            id = "default",
             version = "1.0.0",
             framework = "svelte",
             pages = mapOf(
@@ -81,12 +73,8 @@ class KeelCoreTest {
                 "blog.post" to KeelPageEntry("pages/blog.post.js"),
             ),
         )
-        val resolver = ChainThemeResolver(listOf(midnight, fallback), defaultId = "default")
-        val selected = resolver.resolve(
-            ThemeRequest(pageId = "blog.post", path = "/p/hello", overrideId = "midnight"),
-        )
-        assertEquals("default", selected.manifest.id)
-        assertEquals("pages/blog.post.js", selected.entry.module)
+        assertEquals("pages/blog.post.js", manifest.page("blog.post")?.module)
+        assertNull(manifest.page("blog.missing"))
     }
 
     @Test
