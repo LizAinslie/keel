@@ -21,17 +21,17 @@ Docs: https://keel.mey.cat/  (GitHub Pages; local `pnpm dev` is http://127.0.0.1
 - [Routing](https://keel.mey.cat/docs/core-concepts/routing/)
 - [Actions](https://keel.mey.cat/docs/core-concepts/actions/)
 - [Packs](https://keel.mey.cat/docs/core-concepts/packs/)
-- [AGENTS.md](https://github.com/LizAinslie/keel/blob/main/AGENTS.md): how to work in this repository
+- [AGENTS.md](https://github.com/kolektivdev/keel/blob/main/AGENTS.md): how to work in this repository
 
 ## Optional
 
-- [Harbor sample](https://github.com/LizAinslie/keel/tree/main/samples/harbor): `./gradlew :samples:harbor:run` → http://127.0.0.1:8090
+- [Harbor sample](https://github.com/kolektivdev/keel/tree/main/samples/harbor): `./gradlew :samples:harbor:run` → http://127.0.0.1:8090
 - [Partial reloads](https://keel.mey.cat/docs/advanced/partials/)
 
 ## Skills
 
-- [keel-host](https://raw.githubusercontent.com/LizAinslie/keel/main/skills/keel-host/SKILL.md): implement a Keel server
-- [keel-pack](https://raw.githubusercontent.com/LizAinslie/keel/main/skills/keel-pack/SKILL.md): author a frontend pack
-- [keel-scaffold](https://raw.githubusercontent.com/LizAinslie/keel/main/skills/keel-scaffold/SKILL.md): scaffold a pack from `/__keel/schema`
+- [keel-host](https://raw.githubusercontent.com/kolektivdev/keel/main/skills/keel-host/SKILL.md): implement a Keel server
+- [keel-pack](https://raw.githubusercontent.com/kolektivdev/keel/main/skills/keel-pack/SKILL.md): author a frontend pack
+- [keel-scaffold](https://raw.githubusercontent.com/kolektivdev/keel/main/skills/keel-scaffold/SKILL.md): scaffold a pack from `/__keel/schema`
 
 Install: copy `skills/*` into `.claude/skills/`, `.grok/skills/`, or `.agents/skills/`. See `skills/README.md`.

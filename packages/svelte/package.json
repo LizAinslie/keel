@@ -1,6 +1,6 @@
 {
   "name": "@kolektiv/keel-svelte",
-  "version": "0.0.1",
+  "version": "0.0.2-SNAPSHOT.1",
   "description": "Keel Svelte 5 bindings — Link, Form, Head, page(), useForm, useAction.",
   "type": "module",
   "license": "Apache-2.0",
