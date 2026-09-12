@@ -2,6 +2,7 @@ package dev.kolektiv.keel.ktor
 
 import dev.kolektiv.keel.Keel
 import dev.kolektiv.keel.KeelJson
+import dev.kolektiv.keel.bundle.BundleOrigin
 import dev.kolektiv.keel.bundle.FrontendBundle
 import dev.kolektiv.keel.bundle.UnknownPageInBundleException
 import dev.kolektiv.keel.page.PageBinding
@@ -26,6 +27,7 @@ import io.ktor.http.parseQueryString
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.createRouteScopedPlugin
+import io.ktor.server.application.log
 import io.ktor.server.request.header
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
@@ -46,12 +48,20 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import org.slf4j.Logger
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -76,11 +86,19 @@ class AmbiguousPackException(ids: List<String>) : IllegalStateException(
 internal class KeelEngine(private val config: KeelConfig) {
     private val packPrefix: String = config.packUrlPrefix.trimEnd('/')
     private val bundleOrder = CopyOnWriteArrayList<FrontendBundle>()
+    private val configuredOrder = CopyOnWriteArrayList<FrontendBundle>()
     private val bundlesById = ConcurrentHashMap<String, FrontendBundle>()
+
+    private val swapLock = Any()
+    private val reloadMutex = Mutex()
+    private val watchFingerprints = ConcurrentHashMap<String, BundleFingerprint>()
+    private val watchFailures = ConcurrentHashMap<String, Unit>()
+    private var logger: Logger? = null
 
     init {
         for (bundle in config.configuredBundles()) {
             registerBundle(bundle)
+            configuredOrder.add(bundle)
         }
         if (config.registry.pages.isNotEmpty() && bundleOrder.isEmpty()) {
             throw KeelMissingBundleException()
@@ -115,6 +133,7 @@ internal class KeelEngine(private val config: KeelConfig) {
                 }
             }
         }
+        startPackWatcher(application)
     }
 
     /**
@@ -129,8 +148,11 @@ internal class KeelEngine(private val config: KeelConfig) {
      */
     fun bundleFor(call: ApplicationCall, pageId: String): FrontendBundle {
         val routed = call.attributes.getOrNull(KeelRouteBundleKey)
-        if (routed != null && routed.manifest.page(pageId) != null) return routed
-        val configured = config.configuredBundles()
+        if (routed != null) {
+            val live = bundlesById[routed.id] ?: routed
+            if (live.manifest.page(pageId) != null) return live
+        }
+        val configured = liveBundles()
         if (configured.size == 1) {
             val bundle = configured.single()
             if (bundle.manifest.page(pageId) == null) {
@@ -141,6 +163,9 @@ internal class KeelEngine(private val config: KeelConfig) {
         if (configured.isEmpty()) throw MissingPackException()
         throw AmbiguousPackException(configured.map { it.id })
     }
+
+    /** Configured bundles resolved through the live registry so reloads win. */
+    private fun liveBundles(): List<FrontendBundle> = configuredOrder.toList()
 
     suspend fun respond(
         call: ApplicationCall,
@@ -169,6 +194,7 @@ internal class KeelEngine(private val config: KeelConfig) {
             theme = KeelThemeRef(bundle.id, bundle.version),
             entry = assetUrl(bundle, impl.module),
             css = impl.css.map { assetUrl(bundle, it) },
+            build = bundle.contentHash,
             shared = config.shared?.load(call, resolvedPath, params, resolvedQuery),
             host = bundle.manifest.host,
             layout = impl.layout,
@@ -421,6 +447,7 @@ internal class KeelEngine(private val config: KeelConfig) {
         val raw = KeelJson.codec.encodeToString(KeelSeed.serializer(), seed)
         call.response.header(KeelHeaders.VERSION, seed.theme.version)
         call.response.header(KeelHeaders.THEME, seed.theme.id)
+        call.response.header(KeelHeaders.BUILD, seed.build)
         if (isVisit(call)) {
             call.respondText(raw, ContentType.Application.Json, status)
             return
@@ -440,6 +467,110 @@ internal class KeelEngine(private val config: KeelConfig) {
             return module
         }
         return "$packPrefix/${bundle.id}/${module.trimStart('/')}"
+    }
+
+    // --- pack hot reload -------------------------------------------------
+
+    private fun startPackWatcher(application: Application) {
+        if (!config.watchPacks) return
+        logger = application.log
+        snapshotWatchFingerprints()
+        application.launch {
+            while (isActive) {
+                delay(config.packWatchIntervalMs.coerceAtLeast(50L))
+                try {
+                    reloadBundles()
+                } catch (failure: Throwable) {
+                    application.log.warn("keel: pack watch poll failed", failure)
+                }
+            }
+        }
+    }
+
+    private fun snapshotWatchFingerprints() {
+        for (bundle in bundleOrder) {
+            val origin = bundle.origin
+            val fingerprint = fingerprintFor(origin) ?: continue
+            watchFingerprints[origin.description] = fingerprint
+        }
+    }
+
+    /**
+     * Reopen every watched bundle whose source changed since the last check
+     * and atomically swap it into the live registries. Failed opens leave the
+     * previous bundle serving, warn once, and are retried on the next call.
+     * Returns the ids of the bundles that were swapped.
+     */
+    internal suspend fun reloadBundles(): List<String> = reloadMutex.withLock {
+        val reloaded = mutableListOf<String>()
+        for (bundle in bundleOrder.toList()) {
+            val origin = bundle.origin
+            val fingerprint = fingerprintFor(origin) ?: continue
+            val key = origin.description
+            val previous = watchFingerprints[key]
+            if (previous == fingerprint) continue
+            if (previous == null) {
+                watchFingerprints[key] = fingerprint
+                continue
+            }
+            val fresh = try {
+                withContext(Dispatchers.IO) { FrontendBundle.open(origin) }
+            } catch (failure: Throwable) {
+                if (watchFailures.putIfAbsent(key, Unit) == null) {
+                    logger?.warn("keel: failed to reload pack from $key; keeping the previous pack", failure)
+                }
+                continue
+            }
+            swapBundle(bundle, fresh)
+            watchFingerprints[key] = fingerprint
+            watchFailures.remove(key)
+            logger?.info("keel: reloaded pack ${fresh.id} from $key")
+            reloaded.add(fresh.id)
+        }
+        reloaded
+    }
+
+    private fun swapBundle(old: FrontendBundle, fresh: FrontendBundle) {
+        synchronized(swapLock) {
+            if (fresh.id != old.id) {
+                bundlesById.remove(old.id)
+                watchFingerprints.remove(old.origin.description)
+            }
+            bundlesById[fresh.id] = fresh
+            val index = bundleOrder.indexOfFirst { it.id == old.id }
+            if (index >= 0) bundleOrder[index] = fresh else bundleOrder.add(fresh)
+            val configured = configuredOrder.indexOfFirst { it.id == old.id }
+            if (configured >= 0) configuredOrder[configured] = fresh
+        }
+        old.close()
+    }
+
+    private data class BundleFingerprint(val size: Long, val modified: Long)
+
+    private fun fingerprintFor(origin: BundleOrigin): BundleFingerprint? = when (origin) {
+        is BundleOrigin.File -> runCatching {
+            BundleFingerprint(
+                size = Files.size(origin.path),
+                modified = Files.getLastModifiedTime(origin.path).toMillis(),
+            )
+        }.getOrNull()
+        is BundleOrigin.Directory -> fingerprintDirectory(origin.path)
+        is BundleOrigin.Resource -> null
+    }
+
+    private fun fingerprintDirectory(dir: Path): BundleFingerprint? {
+        if (!Files.isDirectory(dir)) return null
+        return runCatching {
+            var size = 0L
+            var modified = 0L
+            Files.walk(dir).use { walk ->
+                walk.filter { Files.isRegularFile(it) }.forEach { file ->
+                    size += Files.size(file)
+                    modified = maxOf(modified, Files.getLastModifiedTime(file).toMillis())
+                }
+            }
+            BundleFingerprint(size, modified)
+        }.getOrNull()
     }
 
     private fun csrfPolicy() = config.csrf ?: SameOriginCsrfPolicy(config.csrfAllowedOrigins)

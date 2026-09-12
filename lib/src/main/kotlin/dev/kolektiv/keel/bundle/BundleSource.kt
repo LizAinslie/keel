@@ -20,7 +20,9 @@ internal data class EntryMeta(
 
 internal sealed interface BundleSource : AutoCloseable {
     val description: String
+    val origin: BundleOrigin
     fun readManifest(): KeelManifest
+    fun readManifestBytes(): ByteArray
     fun index(): Set<String>
     fun openEntry(path: String): InputStream
     fun openArchive(): InputStream
@@ -35,11 +37,18 @@ internal class DirectoryBundleSource(private val dir: Path) : BundleSource {
     }
 
     override val description: String get() = root.toString()
+    override val origin: BundleOrigin get() = BundleOrigin.Directory(root)
 
     override fun readManifest(): KeelManifest {
         val file = root.resolve("manifest.json")
         if (!Files.isRegularFile(file)) throw MissingBundleManifestException(description)
         return KeelJson.codec.decodeFromString(KeelManifest.serializer(), Files.readString(file))
+    }
+
+    override fun readManifestBytes(): ByteArray {
+        val file = root.resolve("manifest.json")
+        if (!Files.isRegularFile(file)) throw MissingBundleManifestException(description)
+        return Files.readAllBytes(file)
     }
 
     override fun index(): Set<String> {
@@ -80,6 +89,7 @@ internal class DirectoryBundleSource(private val dir: Path) : BundleSource {
 
 internal class ZipBundleSource(
     private val file: Path,
+    override val origin: BundleOrigin,
     private val deleteFileOnClose: Boolean = false,
 ) : BundleSource {
     private val lock = Any()
@@ -105,6 +115,13 @@ internal class ZipBundleSource(
                 stream.readBytes().decodeToString(),
             )
         }
+    }
+
+    override fun readManifestBytes(): ByteArray {
+        val zip = zipFile()
+        val entry = zip.getEntry("manifest.json")
+            ?: throw MissingBundleManifestException(description)
+        return zip.getInputStream(entry).use { it.readBytes() }
     }
 
     override fun index(): Set<String> {

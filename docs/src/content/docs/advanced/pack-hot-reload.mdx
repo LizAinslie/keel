@@ -1,0 +1,61 @@
+---
+title: Pack hot reload
+description: Rebuild a pack while the host runs. The host swaps the bundle, clients reload when the build hash changes.
+category: advanced
+order: 5
+---
+
+import { path } from "../../../lib/paths"
+
+A pack change does not need a JVM restart. Rebuild the `.feb`, let the host
+pick it up, and let connected clients reload themselves onto the new build.
+
+## Dev loop
+
+Run the pack builder in watch mode:
+
+```bash
+pnpm --filter @kolektiv/harbor-pack dev
+```
+
+`vite build --watch` rewrites `samples/harbor/pack/dist/harbor.feb` after every
+save. The file is written to a temp name and renamed into place, so a watcher
+never reads a partial zip.
+
+Run the host against that file instead of the classpath copy:
+
+```bash
+./gradlew :samples:harbor:run --args="pack/dist/harbor.feb"
+```
+
+## How the swap works
+
+Keel fingerprints file and directory bundles by size, mtime, and their
+recursive size/mtime for directories. When `watchPacks = true`, it polls on
+`packWatchIntervalMs` (default `500`), opens a fresh `FrontendBundle` for a
+changed pack, and swaps it into the live bundle registry. Asset URLs, page
+modules, and the seed all come from the new bundle; old in-flight requests
+finish against the old one. Classpath resource bundles are never watched.
+
+```kotlin
+keel {
+    bundle = FrontendBundle.fromFile(Path.of("pack/dist/harbor.feb"))
+    watchPacks = true
+    packWatchIntervalMs = 500
+}
+```
+
+Each bundle has a `contentHash` (SHA-256 over the manifest and sorted entry
+metadata). The document and visit responses carry it as `X-Keel-Build` and as
+`seed.build`, while `X-Keel-Version` stays the manifest semver. When the
+bootstrap router sees a fetched seed whose build differs from the mounted
+build, it clears the prefetch cache, aborts the stale seed, and calls
+`window.location.reload()`. No manual cache busting is needed.
+
+## Failure modes
+
+A bad manifest, a truncated archive, or an IO error during a reopen keeps the
+previous bundle serving. The host logs a warning and retries on the next poll;
+when the source becomes valid again, the swap goes through. If the manifest
+inside a rebuilt pack changes its `id`, the registry entry is replaced under
+the new id.

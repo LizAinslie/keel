@@ -8,6 +8,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -21,6 +22,17 @@ class FrontendBundle private constructor(
     val manifest: KeelManifest = source.readManifest()
     val id: String get() = manifest.id
     val version: String get() = manifest.version
+
+    /** Where this bundle came from; [open] can build a fresh instance of it. */
+    val origin: BundleOrigin get() = source.origin
+
+    /**
+     * SHA-256 hex over the manifest bytes and the sorted entry metadata
+     * (name, size, crc for zip entries / mtime for directory files). Stable
+     * for identical pack content; changes when a pack is rebuilt. Computed
+     * lazily once per bundle.
+     */
+    val contentHash: String by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { computeContentHash() }
 
     private val entries: Set<String> = source.index()
     private val closed = AtomicBoolean(false)
@@ -68,6 +80,28 @@ class FrontendBundle private constructor(
         return "\"$tag\""
     }
 
+    private fun computeContentHash(): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        digest.update(source.readManifestBytes())
+        digest.update(0)
+        for (name in entries.sorted()) {
+            val meta = source.entryMeta(name)
+            digest.update(name.toByteArray(Charsets.UTF_8))
+            digest.update(0)
+            digest.update(meta.size.toString().toByteArray(Charsets.UTF_8))
+            digest.update(0)
+            if (meta.crc != 0L) {
+                digest.update('z'.code.toByte())
+                digest.update(meta.crc.toString().toByteArray(Charsets.UTF_8))
+            } else {
+                digest.update('d'.code.toByte())
+                digest.update(meta.lastModified.toString().toByteArray(Charsets.UTF_8))
+            }
+            digest.update(0)
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
     override fun close() {
         if (closed.compareAndSet(false, true)) {
             source.close()
@@ -75,6 +109,13 @@ class FrontendBundle private constructor(
     }
 
     companion object {
+        /** Open the pack at [origin], the same way it was originally loaded. */
+        fun open(origin: BundleOrigin): FrontendBundle = when (origin) {
+            is BundleOrigin.File -> fromFile(origin.path)
+            is BundleOrigin.Directory -> fromDirectory(origin.path)
+            is BundleOrigin.Resource -> fromResource(origin.name, origin.classLoader)
+        }
+
         fun fromResource(
             name: String,
             classLoader: ClassLoader = Thread.currentThread().contextClassLoader
@@ -86,13 +127,19 @@ class FrontendBundle private constructor(
             val temp = Files.createTempFile("keel-bundle-", ".${Keel.BUNDLE_EXTENSION}")
             stream.use { Files.copy(it, temp, StandardCopyOption.REPLACE_EXISTING) }
             temp.toFile().deleteOnExit()
-            return FrontendBundle(ZipBundleSource(temp, deleteFileOnClose = true))
+            return FrontendBundle(
+                ZipBundleSource(
+                    temp,
+                    BundleOrigin.Resource(resource, classLoader),
+                    deleteFileOnClose = true,
+                ),
+            )
         }
 
         fun fromFile(file: Path): FrontendBundle {
             val path = file.toAbsolutePath().normalize()
             require(Files.isRegularFile(path)) { "bundle file does not exist: $path" }
-            return FrontendBundle(ZipBundleSource(path))
+            return FrontendBundle(ZipBundleSource(path, BundleOrigin.File(path)))
         }
 
         fun fromDirectory(dir: Path): FrontendBundle {

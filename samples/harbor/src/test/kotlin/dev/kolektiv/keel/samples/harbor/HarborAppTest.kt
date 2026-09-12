@@ -100,6 +100,24 @@ class HarborAppTest {
     }
 
     @Test
+    fun `home document advertises the pack build hash`() = testApplication {
+        writePack()
+        application { harbor(FrontendBundle.fromDirectory(pack)) }
+        val response = client.get("/")
+        assertEquals(HttpStatusCode.OK, response.status)
+        val build = response.headers[KeelHeaders.BUILD]
+        assertTrue(!build.isNullOrBlank())
+        assertTrue(response.bodyAsText().contains("\"build\":\"$build\""))
+
+        val visit = client.get("/") {
+            header(KeelHeaders.VISIT, "true")
+        }
+        assertEquals(build, visit.headers[KeelHeaders.BUILD])
+        val seed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), visit.bodyAsText())
+        assertEquals(build, seed.build)
+    }
+
+    @Test
     fun `document shell carries a csp nonce and matching header`() = testApplication {
         writePack()
         application { harbor(FrontendBundle.fromDirectory(pack)) }

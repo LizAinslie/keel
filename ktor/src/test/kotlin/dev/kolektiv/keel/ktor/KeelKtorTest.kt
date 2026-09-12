@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
+import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
 class KeelKtorTest {
@@ -113,12 +114,13 @@ class KeelKtorTest {
         dir.resolve("assets/styles.css").writeText("body{}")
     }
 
-    private fun Application.installSample(csp: CspPolicy? = null) {
+    private fun Application.installSample(csp: CspPolicy? = null, watchPacks: Boolean = false) {
         keel {
             bundle = FrontendBundle.fromDirectory(pack)
             title = "Harbor"
             notFoundPageId = "missing"
             this.csp = csp
+            this.watchPacks = watchPacks
             pages {
                 page<HomePage>("home", "/") {
                     head("Home title", description = "A greeting.")
@@ -503,6 +505,85 @@ class KeelKtorTest {
             assertEquals("harbor", bundle.manifest.id)
             assertEquals("pages/home.js", bundle.manifest.page("home")?.module)
         }
+    }
+
+    @Test
+    fun `document and visit advertise the pack build hash`() = testApplication {
+        writePack()
+        application { installSample() }
+        val expected = FrontendBundle.fromDirectory(pack).use { it.contentHash }
+        assertTrue(expected.isNotBlank())
+
+        val document = client.get("/")
+        assertEquals(expected, document.headers[KeelHeaders.BUILD])
+        assertTrue(document.bodyAsText().contains("\"build\":\"$expected\""))
+
+        val visit = client.get("/") {
+            header(KeelHeaders.VISIT, "true")
+        }
+        assertEquals(expected, visit.headers[KeelHeaders.BUILD])
+        val seed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), visit.bodyAsText())
+        assertEquals(expected, seed.build)
+        assertEquals("0.1.0", seed.theme.version)
+    }
+
+    @Test
+    fun `reloadBundles swaps new content without restarting`() = testApplication {
+        writePack()
+        var engine: KeelEngine? = null
+        application {
+            installSample(watchPacks = true)
+            engine = attributes.getOrNull(KeelEngineKey)
+        }
+        startApplication()
+        assertTrue(engine != null)
+        val keel = engine!!
+        val before = client.get("/").headers[KeelHeaders.BUILD]
+
+        pack.resolve("pages/home.js").writeText("export async function mount() { /* v2 */ }")
+        pack.resolve("manifest.json").writeText(
+            pack.resolve("manifest.json").readText().replace("\"0.1.0\"", "\"0.2.0\""),
+        )
+        val reloaded = keel.reloadBundles()
+        assertEquals(listOf("harbor"), reloaded)
+
+        val document = client.get("/")
+        val after = document.headers[KeelHeaders.BUILD]
+        assertTrue(!after.isNullOrBlank())
+        assertTrue(before != after)
+        val entry = client.get("/__keel/pack/harbor/pages/home.js")
+        assertTrue(entry.bodyAsText().contains("v2"), entry.bodyAsText())
+
+        val visit = client.get("/") {
+            header(KeelHeaders.VISIT, "true")
+        }
+        val seed = KeelJson.codec.decodeFromString(KeelSeed.serializer(), visit.bodyAsText())
+        assertEquals("0.2.0", seed.theme.version)
+        assertEquals(after, seed.build)
+    }
+
+    @Test
+    fun `failed reload keeps the previous bundle serving`() = testApplication {
+        writePack()
+        var engine: KeelEngine? = null
+        application {
+            installSample(watchPacks = true)
+            engine = attributes.getOrNull(KeelEngineKey)
+        }
+        startApplication()
+        val before = client.get("/").headers[KeelHeaders.BUILD]
+
+        val keel = engine!!
+        pack.resolve("manifest.json").writeText("{ not json")
+        assertTrue(keel.reloadBundles().isEmpty())
+        assertEquals(before, client.get("/").headers[KeelHeaders.BUILD])
+        assertEquals(HttpStatusCode.OK, client.get("/").status)
+
+        writePack()
+        pack.resolve("pages/home.js").writeText("export async function mount() { /* v3 */ }")
+        assertEquals(listOf("harbor"), keel.reloadBundles())
+        assertTrue(client.get("/__keel/pack/harbor/pages/home.js").bodyAsText().contains("v3"))
+        assertTrue(before != client.get("/").headers[KeelHeaders.BUILD])
     }
 
     @Test

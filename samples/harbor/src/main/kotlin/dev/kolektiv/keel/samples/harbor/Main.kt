@@ -12,6 +12,9 @@ fun main(args: Array<String>) {
     val port = rest.removeFirstOrNull()?.toIntOrNull() ?: 8090
     val host = rest.removeFirstOrNull() ?: "0.0.0.0"
     val bundle = loadBundle(packOverride)
+    if (packOverride != null) {
+        println("Watching pack ${packOverride.toAbsolutePath()} for changes")
+    }
     println("Harbor listening on http://$host:$port")
     println("Pack ${bundle.id}@${bundle.version}")
     embeddedServer(Netty, port = port, host = host) {

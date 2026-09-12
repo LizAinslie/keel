@@ -12,5 +12,6 @@ object KeelHeaders {
     const val EXCEPT: String = "X-Keel-Except"
     const val THEME: String = "X-Keel-Theme"
     const val VERSION: String = "X-Keel-Version"
+    const val BUILD: String = "X-Keel-Build"
     const val PARTIAL: String = "X-Keel-Partial"
 }

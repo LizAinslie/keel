@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 import { mkdirSync } from "node:fs"
 import { zipSync } from "fflate"
@@ -36,12 +36,32 @@ export function packFeb(options: PackFebOptions): void {
   }
   const zipped = zipSync(files, { level: 6 })
   mkdirSync(dirname(options.outFile), { recursive: true })
-  writeFileSync(options.outFile, zipped)
+  writeFebAtomic(options.outFile, zipped)
+}
+
+/**
+ * Write the archive through a temp file in the target directory so a host
+ * watcher never observes a partially written `.feb`.
+ */
+export function writeFebAtomic(outFile: string, bytes: Uint8Array): void {
+  const temp = join(dirname(outFile), `.${outFile.split(/[\\/]/).pop()}.${process.pid}.tmp`)
+  try {
+    writeFileSync(temp, bytes)
+    renameSync(temp, outFile)
+  } catch (error) {
+    rmSync(temp, { force: true })
+    try {
+      writeFileSync(outFile, bytes)
+    } catch {
+      throw error
+    }
+  }
 }
 
 function collectFiles(dir: string, prefix: string, files: Record<string, Uint8Array>, outFile: string): void {
   for (const name of readdirSync(dir)) {
     if (name === ".vite") continue
+    if (name.endsWith(".tmp")) continue
     const full = join(dir, name)
     const rel = prefix ? `${prefix}/${name}` : name
     if (statSync(full).isDirectory()) {

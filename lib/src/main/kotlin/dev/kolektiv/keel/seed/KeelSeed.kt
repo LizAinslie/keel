@@ -49,6 +49,9 @@ data class KeelSeed(
     val entry: String,
     @EncodeDefault
     val css: List<String> = emptyList(),
+    /** Content hash of the serving pack; clients reload when it changes. */
+    @EncodeDefault
+    val build: String = "",
     val shared: JsonObject? = null,
     @EncodeDefault
     val host: String = Keel.DEFAULT_HOST,

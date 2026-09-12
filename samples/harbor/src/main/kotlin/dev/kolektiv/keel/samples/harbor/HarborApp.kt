@@ -12,6 +12,7 @@ import kotlinx.serialization.json.put
 fun Application.harbor(bundle: FrontendBundle) {
     keel {
         this.bundle = bundle
+        watchPacks = true
         title = "Harbor"
         notFoundPageId = "harbor.notFound"
         csp = CspPolicy.nonce()

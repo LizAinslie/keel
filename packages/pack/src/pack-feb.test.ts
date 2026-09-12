@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { test } from "node:test"
@@ -38,6 +38,15 @@ test("zip contains manifest.json at the archive root", () => {
   assert.ok("bootstrap.js" in files)
   assert.ok("pages/home.js" in files)
   assert.equal(Object.keys(files).some((name) => name.startsWith(".vite")), false)
+})
+
+test("feb is written atomically and leaves no temp file", () => {
+  const root = mkdtempSync(join(tmpdir(), "keel-pack-atomic-"))
+  const dist = writeDist(root)
+  const out = join(root, "demo.feb")
+  packFeb({ distDir: dist, outFile: out })
+  assert.deepEqual(readdirSync(root).filter((name) => name.endsWith(".tmp")), [])
+  assert.ok("manifest.json" in unzipSync(readFileSync(out)))
 })
 
 test("contract rejects unknown page ids", () => {
