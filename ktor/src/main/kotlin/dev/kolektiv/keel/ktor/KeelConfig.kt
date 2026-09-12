@@ -7,7 +7,6 @@ import dev.kolektiv.keel.bundle.FrontendBundle
 import dev.kolektiv.keel.page.PageMethod
 import dev.kolektiv.keel.page.PageRegistry
 import dev.kolektiv.keel.security.CsrfPolicy
-import dev.kolektiv.keel.theme.ThemeResolver
 import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationCall
 import kotlinx.serialization.json.JsonObject
@@ -46,11 +45,19 @@ class ActionsDsl @PublishedApi internal constructor(
 }
 
 class KeelConfig {
+    /**
+     * The pack the pages DSL renders from. The host chooses it up front; Keel
+     * never picks a pack and a visitor header cannot override it.
+     */
     var bundle: FrontendBundle? = null
+
+    /**
+     * Additional installed packs. Address them per route with
+     * `route.keel(pack)`; a bundle-less `respondPage` only resolves when
+     * exactly one pack is configured in total.
+     */
     var bundles: List<FrontendBundle> = emptyList()
     var packUrlPrefix: String = Keel.PACK_URL_PREFIX
-    var defaultThemeId: String? = null
-    var themeResolver: ThemeResolver? = null
     var bootstrap: String = "bootstrap.js"
     var title: String = "Keel"
     var shared: SharedProvider? = null

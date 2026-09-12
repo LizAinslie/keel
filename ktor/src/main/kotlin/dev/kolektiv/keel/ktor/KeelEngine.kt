@@ -3,6 +3,7 @@ package dev.kolektiv.keel.ktor
 import dev.kolektiv.keel.Keel
 import dev.kolektiv.keel.KeelJson
 import dev.kolektiv.keel.bundle.FrontendBundle
+import dev.kolektiv.keel.bundle.UnknownPageInBundleException
 import dev.kolektiv.keel.page.PageBinding
 import dev.kolektiv.keel.page.PageMethod
 import dev.kolektiv.keel.page.PageRegistry
@@ -15,9 +16,6 @@ import dev.kolektiv.keel.seed.KeelThemeRef
 import dev.kolektiv.keel.seed.PageHead
 import dev.kolektiv.keel.seed.SeedFilter
 import dev.kolektiv.keel.typegen.Typegen
-import dev.kolektiv.keel.theme.ChainThemeResolver
-import dev.kolektiv.keel.theme.MissingPageInThemeException
-import dev.kolektiv.keel.theme.ThemeRequest
 import dev.kolektiv.keel.visit.KeelHeaders
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -62,6 +60,17 @@ class KeelMissingBundleException : IllegalStateException(
 )
 
 class KeelUnknownHandlerException(id: String) : IllegalStateException("no loader registered for page '$id'")
+
+/** No pack is available; the call site must supply one. */
+class MissingPackException : IllegalStateException(
+    "no pack to render with: pass a pack to respondPage(pack, ...) or scope the route with route.keel(pack) { ... }",
+)
+
+/** Several packs are installed and none was scoped for this route. */
+class AmbiguousPackException(ids: List<String>) : IllegalStateException(
+    "multiple packs configured (${ids.joinToString(", ")}): " +
+        "scope the route with route.keel(pack) { ... } or pass a pack to respondPage(pack, ...)",
+)
 
 @PublishedApi
 internal class KeelEngine(private val config: KeelConfig) {
@@ -108,19 +117,29 @@ internal class KeelEngine(private val config: KeelConfig) {
         }
     }
 
-    fun bundleFor(call: ApplicationCall, pageId: String, path: String): FrontendBundle {
-        call.attributes.getOrNull(KeelRouteBundleKey)?.let { routed ->
-            if (routed.manifest.implements(pageId)) return routed
+    /**
+     * Pick the pack for a page from the call site, never from a visitor header:
+     *
+     * 1. a route-scoped pack (`route.keel(pack)`) wins when it implements the page;
+     * 2. otherwise exactly one configured pack is used — a pack that does not
+     *    implement the page throws [UnknownPageInBundleException];
+     * 3. no pack at all throws [MissingPackException], several configured packs
+     *    without a scoped route throw [AmbiguousPackException]. Both tell the
+     *    host to pass the pack explicitly or scope the route.
+     */
+    fun bundleFor(call: ApplicationCall, pageId: String): FrontendBundle {
+        val routed = call.attributes.getOrNull(KeelRouteBundleKey)
+        if (routed != null && routed.manifest.page(pageId) != null) return routed
+        val configured = config.configuredBundles()
+        if (configured.size == 1) {
+            val bundle = configured.single()
+            if (bundle.manifest.page(pageId) == null) {
+                throw UnknownPageInBundleException(pageId, bundle.id)
+            }
+            return bundle
         }
-        if (bundleOrder.isEmpty()) throw KeelMissingBundleException()
-        val override = call.request.header(KeelHeaders.THEME)
-        val resolver = config.themeResolver
-            ?: ChainThemeResolver(bundleOrder.map { it.manifest }, defaultThemeId())
-        val selection = resolver.resolve(
-            ThemeRequest(pageId = pageId, path = path, overrideId = override),
-        )
-        return bundlesById[selection.manifest.id]
-            ?: throw MissingPageInThemeException(pageId, selection.manifest.id)
+        if (configured.isEmpty()) throw MissingPackException()
+        throw AmbiguousPackException(configured.map { it.id })
     }
 
     suspend fun respond(
@@ -257,10 +276,7 @@ internal class KeelEngine(private val config: KeelConfig) {
     }
 
     private suspend fun respondNotFound(call: ApplicationCall, path: String, query: Parameters) {
-        val notFoundId = config.notFoundPageId ?: bundleOrder.firstOrNull { it.manifest.notFound != null }?.let { bundle ->
-            bundle.manifest.pages.entries.find { it.value.module == bundle.manifest.notFound }?.key
-                ?: "not-found"
-        }
+        val notFoundId = config.notFoundPageId ?: notFoundPageId(call)
         val binding = notFoundId?.let { id ->
             runCatching { config.registry.get(id) }.getOrNull()
         }
@@ -269,6 +285,25 @@ internal class KeelEngine(private val config: KeelConfig) {
             return
         }
         runLoader(call, binding, path, query, HttpStatusCode.NotFound, recurseMissing = false)
+    }
+
+    /**
+     * The route-scoped pack owns `notFound` when it declares one; otherwise
+     * installed packs are scanned in registration order. Keel never picks a
+     * pack here, it only maps a pack's declared module back to a host page id.
+     */
+    private fun notFoundPageId(call: ApplicationCall): String? {
+        val routed = call.attributes.getOrNull(KeelRouteBundleKey)
+        val ordered = if (routed == null) {
+            bundleOrder
+        } else {
+            listOf(routed) + bundleOrder.filter { it.id != routed.id }
+        }
+        for (bundle in ordered) {
+            val module = bundle.manifest.notFound ?: continue
+            return bundle.manifest.pages.entries.find { it.value.module == module }?.key ?: "not-found"
+        }
+        return null
     }
 
     private suspend fun runLoader(
@@ -286,10 +321,10 @@ internal class KeelEngine(private val config: KeelConfig) {
         try {
             val handler = config.handlers[binding.id] ?: throw KeelUnknownHandlerException(binding.id)
             val data = request.handler()
-            val bundle = bundleFor(call, binding.id, path)
+            val bundle = bundleFor(call, binding.id)
             respond(call, bundle, binding.id, data, binding.serializer, params, status, path, query, head = request.head)
         } catch (invalid: PageValidationException) {
-            val bundle = bundleFor(call, binding.id, path)
+            val bundle = bundleFor(call, binding.id)
             respond(
                 call,
                 bundle,
@@ -304,7 +339,7 @@ internal class KeelEngine(private val config: KeelConfig) {
                 head = request.head,
             )
         } catch (redirect: PageRedirectException) {
-            val bundle = bundleFor(call, binding.id, path)
+            val bundle = bundleFor(call, binding.id)
             respond(
                 call,
                 bundle,
@@ -400,9 +435,6 @@ internal class KeelEngine(private val config: KeelConfig) {
         return "$packPrefix/${bundle.id}/${module.trimStart('/')}"
     }
 
-    private fun defaultThemeId(): String =
-        config.defaultThemeId ?: bundleOrder.firstOrNull()?.id ?: throw KeelMissingBundleException()
-
     private fun csrfPolicy() = config.csrf ?: SameOriginCsrfPolicy(config.csrfAllowedOrigins)
 
     private suspend fun guardCsrf(call: ApplicationCall): Boolean {
@@ -475,6 +507,10 @@ internal class KeelEngine(private val config: KeelConfig) {
     }
 }
 
+/**
+ * Install Keel. The host owns pack choice: set [KeelConfig.bundle] for the
+ * pages DSL, or render custom routes from a pack passed at the call site.
+ */
 fun Application.keel(configure: KeelConfig.() -> Unit) {
     val config = KeelConfig().apply(configure)
     val engine = KeelEngine(config)
@@ -493,6 +529,11 @@ private class KeelBundleRouteSelector(private val bundleId: String) : RouteSelec
     override fun toString(): String = "(keel:$bundleId)"
 }
 
+/**
+ * Scope routes to [bundle]: pages rendered below this route use this pack.
+ * A scoped pack beats the host's configured pack; Keel never consults a
+ * visitor header.
+ */
 fun Route.keel(bundle: FrontendBundle, configure: Route.() -> Unit) {
     val app = application
     val engine = app.attributes.getOrNull(KeelEngineKey) ?: run {
