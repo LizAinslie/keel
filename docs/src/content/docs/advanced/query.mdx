@@ -6,6 +6,7 @@ order: 4
 ---
 
 import { path } from "../../../lib/paths"
+import CodeBlock from "../../../components/CodeBlock.astro"
 import CodePair from "../../../components/CodePair.astro"
 
 TanStack Query is the async layer **over visits and actions**, not a REST API
@@ -46,6 +47,61 @@ function onPost(event) {
 Harbor's Svelte bootstrap creates the client, hydrates from `#__keel_seed`,
 and keeps the cache aligned when visits (`Link`) call `setPage`.
 `useAction` / `useKeelPageQuery` pass that client explicitly.
+
+## Actions and effects
+
+`useAction(id)` returns a reactive proxy. State reads (`isPending`, `error`, …)
+subscribe the current reactive scope to the mutation store; method reads
+(`mutateAsync`, `reset`) do not. Reading state inside an effect still makes it
+re-run on every mutation transition, so an effect-driven load that checks
+`isPending` can fire the action again and again: an endless
+`POST /__keel/action/{id}` loop that hammers the host and flashes the spinner.
+
+`useAction` mutations also reload the page by default: on success they
+`router.reload()` and rehydrate the seed. `reload: false` skips that visit; it
+does not stop an effect from re-reading action state.
+
+<CodeBlock
+  lang="svelte"
+  title="WRONG: effect reads action state, then fires the action"
+  code={`<script lang="ts">
+  import { useAction } from "@kolektiv/keel-svelte"
+
+  const getSharing = useAction("app.getSharing", { reload: false })
+
+  $effect(() => {
+    if (getSharing.isPending) return
+    void getSharing.mutateAsync({ id })
+  })
+</script>`}
+/>
+
+<CodeBlock
+  lang="svelte"
+  title="RIGHT: guard by key, untrack proxy access"
+  code={`<script lang="ts">
+  import { untrack } from "svelte"
+  import { useAction } from "@kolektiv/keel-svelte"
+
+  let { sharingId } = $props()
+  const getSharing = useAction("app.getSharing", { reload: false })
+  let loadedId: string | undefined
+
+  $effect(() => {
+    const id = sharingId
+    if (!id || loadedId === id) return
+    loadedId = id
+    untrack(() => {
+      getSharing.reset()
+      void getSharing.mutateAsync({ id })
+    })
+  })
+</script>`}
+/>
+
+Prefer event handlers for user-initiated writes. When a load belongs in an
+effect, guard it by a key so it runs once per open/id and keep action state
+reads inside `untrack(...)`.
 
 Do **not** add `/api/messages`. A pack that `fetch`es a second JSON source is
 against protocol. See
