@@ -12,6 +12,7 @@ data class KeelPageEntry(
     @EncodeDefault
     val css: List<String> = emptyList(),
     val layout: String? = null,
+    val head: String? = null,
 )
 
 @OptIn(ExperimentalSerializationApi::class)

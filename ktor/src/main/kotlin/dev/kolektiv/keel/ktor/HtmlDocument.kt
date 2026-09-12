@@ -15,7 +15,7 @@ internal object HtmlDocument {
             """<link rel="stylesheet" href="${escapeAttr(href)}" data-keel-css>"""
         }
         val rootId = Keel.DEFAULT_HOST.removePrefix("#")
-        val documentTitle = seed.head?.title ?: title
+        val documentTitle = seed.head?.title?.takeIf { it.isNotBlank() } ?: title
         return buildString {
             appendLine("<!doctype html>")
             appendLine("<html lang=\"en\">")
@@ -51,6 +51,15 @@ internal object HtmlDocument {
     }
 
     private fun appendHeadTags(out: StringBuilder, documentTitle: String, head: PageHead?, path: String) {
+        val packHtml = head?.html
+        if (!packHtml.isNullOrBlank()) {
+            if (!packHtml.contains("<title", ignoreCase = true)) {
+                tagged(out, "title", emptyMap(), escapeHtml(documentTitle))
+            }
+            out.append(packHtml)
+            if (!packHtml.endsWith("\n")) out.append('\n')
+            return
+        }
         tagged(out, "title", emptyMap(), escapeHtml(documentTitle))
         if (head == null) return
         val description = head.description

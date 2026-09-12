@@ -1,6 +1,6 @@
 ---
 title: Document head and SEO
-description: Crawlers GET the real URL. seed.head is written into the HTML shell.
+description: Packs author +head.svelte; the host renders it into the HTML shell.
 category: core-concepts
 order: 7
 ---
@@ -12,59 +12,72 @@ import CodePair from "../../../components/CodePair.astro"
 
 Crawlers and share bots **GET the real host URL**. That document is the SEO
 unit. A visit (`X-Keel-Visit`) is `pushState` plus JSON — social crawlers do
-not run JS.
+not run JS, and visits are not the SEO unit.
 
-Set `head` in the loader. `respondPage` writes it into the HTML shell
-(`<title>`, description, canonical, `og:*`).
+## The pack authors the head
+
+A page declares its head in a sibling `+head.svelte`, next to `+page.svelte`:
+
+<CodePair
+  fw="svelte"
+  title="pages/harbor/user/+head.svelte"
+  ts={`<script lang="ts">
+  import type { KeelSeed } from "@kolektiv/keel"
+  import type { UserPage } from "@app/page-types"
+
+  let { seed }: { seed: KeelSeed<UserPage> } = $props()
+</script>
+
+<title>{seed.data.user.displayName} — Harbor</title>
+<meta name="description" content="Messages from {seed.data.user.displayName}." />`}
+  js={`<script>
+  let { seed } = $props()
+</script>
+
+<title>{seed.data.user.displayName} — Harbor</title>
+<meta name="description" content="Messages from {seed.data.user.displayName}." />`}
+/>
+
+`@kolektiv/keel-pack` compiles it at pack build time into the page's `head`
+string in `manifest.json`. Only head markup survives: `<title>`, `<meta>`,
+`<link>`, and `<script src>`. `{seed.path}` becomes a host placeholder
+(`{{path}}`), and blocks, `{@html}`, and non-`seed.*` expressions fail the
+pack build. No pack JS runs on the Kotlin host.
+
+## The host renders it
+
+On a document GET the host substitutes the placeholders from the seed
+(`page`, `path`, `params`, `data`, `shared`, `theme`), allowlists tags and
+attributes, drops unsafe URLs, and writes real tags into `<head>`.
+
+`PageRequest.head(...)` fills the fields a pack head omits, and is the whole
+head when the pack ships no `+head.svelte`. Canonical defaults to the
+document URL.
 
 <CodeBlock
   lang="kotlin"
   bw="ktor"
-  title="Loader head"
+  title="Fallback loader head"
   code={`page<UserPage>("harbor.user", "/u/{id}") {
     val user = Board.user(params.getValue("id"))
         ?: throw PageMissingException(path)
-    head(
-        "\${user.displayName} — Harbor",
-        description = "Messages from \${user.displayName}.",
-    )
+    head("\${user.displayName} — Harbor")
     UserPage(user = user.toRef(), messages = Board.messagesFor(user.id))
 }`}
 />
 
-`PageRequest.head(...)` stores the value on the request. Canonical defaults
-to the document URL.
+## Visits stay JSON
 
-Svelte `<Head>` reads the same `page().head`, so visits stay in sync. Props
-override the seed. Extra `<meta>` children are client-only.
-
-<CodePair
-  fw="svelte"
-  title="pages/harbor/user/+page.svelte"
-  ts={`<script lang="ts">
-  import { Head, page } from "@kolektiv/keel-svelte"
-  import type { UserPage } from "@app/page-types"
-
-  const ctx = page<UserPage>()
-</script>
-
-<Head />
-<h1>{ctx.data.user.displayName}</h1>`}
-  js={`<script>
-  import { Head, page } from "@kolektiv/keel-svelte"
-
-  const ctx = page()
-</script>
-
-<Head />
-<h1>{ctx.data.user.displayName}</h1>`}
-/>
+A visit returns the same resolved head on `seed.head`, including `html`. The
+client applies it in place, so `document.head` keeps exactly one `<title>`
+after navigation and the SPA matches the crawler document.
 
 A document GET of `/u/{id}` contains the display name in `<title>` **without
 executing JavaScript**. That is the test that matters for share bots.
 
-<Callout title="Do not author head in the pack for SEO">
-  There is no JS runtime in Ktor. Present <code>seed.head</code>. See
+<Callout title="Do not use +page.ts metadata">
+  The head contract is <code>+head.svelte</code>; the host resolves it onto
+  <code>seed.head</code>. See
   <a href={path("/docs/core-concepts/seed")}>Seed and headers</a> for the JSON
   shape.
 </Callout>

@@ -30,23 +30,14 @@ fun Application.harbor(bundle: FrontendBundle) {
         }
         pages {
             page<HomePage>("harbor.home", "/") {
-                head(
-                    "Harbor",
-                    description = "An in-memory message board. Set a display name and post.",
-                )
                 HomePage(viewer = Board.viewer(call)?.toRef(), feed = Board.feed())
             }
             page<UserPage>("harbor.user", "/u/{id}") {
                 val user = Board.user(params.getValue("id"))
                     ?: throw PageMissingException(path)
-                head(
-                    "${user.displayName} — Harbor",
-                    description = "Messages from ${user.displayName}.",
-                )
                 UserPage(user = user.toRef(), messages = Board.messagesFor(user.id))
             }
             page<NotFoundPage>("harbor.notFound", "/__not-found") {
-                head("Not on this board — Harbor", description = "No page at $path.")
                 NotFoundPage(path = path)
             }
         }

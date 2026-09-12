@@ -18,6 +18,7 @@ export type ManifestBundle = Record<string, ManifestChunk>
 export interface PackManifestPage {
   module: string
   css: string[]
+  head?: string
 }
 
 export interface PackManifest {

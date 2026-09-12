@@ -8,6 +8,7 @@ export {
   type WritePackManifestOptions,
 } from "./manifest-write.ts"
 export type { DiscoveredPage, RouterAdapter } from "./adapter.ts"
+export { compileHeadTemplate } from "./head-template.ts"
 export { scaffoldPack, emitTypescript, loadSchema, type ScaffoldOptions, type ScaffoldFramework } from "./scaffold.ts"
 export {
   parsePackSchema,

@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { Head, Link, page } from "@kolektiv/keel-svelte"
+  import { Link, page } from "@kolektiv/keel-svelte"
   import type { NotFoundPage } from "../../../lib/page-types"
 
   const ctx = page<NotFoundPage>()
 </script>
-
-<Head />
 
 <h1>{ctx.data.title}</h1>
 <p class="lede">No page at <code>{ctx.data.path}</code>.</p>

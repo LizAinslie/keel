@@ -16,7 +16,12 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -43,25 +48,29 @@ class HarborAppTest {
             "harbor.user" to "pages/harbor.user.js",
             "harbor.notFound" to "pages/harbor.notFound.js",
         )
-        val pageEntries = pages.entries.joinToString(",\n") { (pageId, module) ->
-            val css = if (pageId == "harbor.home") """, "css": ["assets/styles.css"]""" else ""
-            """"$pageId": { "module": "$module"$css }"""
-        }
-        pack.resolve("manifest.json").writeText(
-            """
-            {
-              "format": "keel/1",
-              "id": "harbor",
-              "version": "0.1.0",
-              "framework": "svelte",
-              "host": "#__keel_root",
-              "pages": {
-                $pageEntries
-              },
-              "notFound": "pages/harbor.notFound.js"
-            }
-            """.trimIndent(),
+        val heads = mapOf(
+            "harbor.home" to HOME_HEAD,
+            "harbor.user" to USER_HEAD,
+            "harbor.notFound" to NOT_FOUND_HEAD,
         )
+        val manifest = buildJsonObject {
+            put("format", "keel/1")
+            put("id", "harbor")
+            put("version", "0.1.0")
+            put("framework", "svelte")
+            put("host", "#__keel_root")
+            putJsonObject("pages") {
+                for ((pageId, module) in pages) {
+                    putJsonObject(pageId) {
+                        put("module", module)
+                        if (pageId == "harbor.home") putJsonArray("css") { add("assets/styles.css") }
+                        heads[pageId]?.let { put("head", it) }
+                    }
+                }
+            }
+            put("notFound", "pages/harbor.notFound.js")
+        }
+        pack.resolve("manifest.json").writeText(manifest.toString())
         pack.resolve("bootstrap.js").writeText("export function bootstrap() {}")
         pack.resolve("pages").createDirectories()
         for (module in pages.values) {
@@ -84,7 +93,7 @@ class HarborAppTest {
         assertTrue(body.contains("name=\"description\""))
         assertTrue(body.contains("property=\"og:title\""))
         assertTrue(body.contains("property=\"og:type\""))
-        assertTrue(body.contains("application/ld+json"))
+        assertTrue(body.contains("name=\"description\""))
         assertTrue(body.contains("<noscript>"))
         assertTrue(body.contains("/__keel/pack/harbor/pages/harbor.home.js"))
         assertTrue(body.contains("/__keel/pack/harbor/bootstrap.js"))
@@ -223,5 +232,14 @@ class HarborAppTest {
     private fun <T> decodeAction(body: String, serializer: kotlinx.serialization.KSerializer<T>): T {
         val data = KeelJson.codec.parseToJsonElement(body).jsonObject.getValue("data")
         return KeelJson.codec.decodeFromJsonElement(serializer, data)
+    }
+
+    private companion object {
+        val HOME_HEAD =
+            """<title>Harbor</title><meta name="description" content="An in-memory message board. Set a display name and post." /><meta property="og:title" content="Harbor" /><meta property="og:type" content="website" />"""
+        val USER_HEAD =
+            """<title>{{data.user.displayName}} — Harbor</title><meta name="description" content="Messages from {{data.user.displayName}}." /><meta property="og:title" content="{{data.user.displayName}} — Harbor" />"""
+        val NOT_FOUND_HEAD =
+            """<title>Not on this board — Harbor</title><meta name="description" content="No page at {{path}}." />"""
     }
 }

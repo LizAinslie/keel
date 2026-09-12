@@ -26,6 +26,7 @@
     canonical: canonical ?? ctx.head?.canonical,
     image: image ?? ctx.head?.image,
     type: type ?? ctx.head?.type,
+    html: ctx.head?.html,
   })
 
   $effect(() => {

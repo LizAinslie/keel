@@ -9,6 +9,7 @@ import dev.kolektiv.keel.page.PageRegistry
 import dev.kolektiv.keel.security.CsrfRequest
 import dev.kolektiv.keel.security.CsrfVerdict
 import dev.kolektiv.keel.security.SameOriginCsrfPolicy
+import dev.kolektiv.keel.seed.DocumentHead
 import dev.kolektiv.keel.seed.KeelSeed
 import dev.kolektiv.keel.seed.KeelThemeRef
 import dev.kolektiv.keel.seed.PageHead
@@ -140,7 +141,7 @@ internal class KeelEngine(private val config: KeelConfig) {
         val resolvedPath = path ?: call.request.path()
         val resolvedQuery = query ?: call.request.queryParameters
         val querySuffix = resolvedQuery.formUrlEncode().let { if (it.isEmpty()) "" else "?$it" }
-        val seed = KeelSeed(
+        val draft = KeelSeed(
             page = pageId,
             path = resolvedPath + querySuffix,
             params = params,
@@ -153,7 +154,14 @@ internal class KeelEngine(private val config: KeelConfig) {
             host = bundle.manifest.host,
             layout = impl.layout,
             redirect = redirect,
-            head = head,
+        )
+        val seed = draft.copy(
+            head = DocumentHead.resolve(
+                packHtml = impl.head,
+                host = head,
+                seed = draft,
+                documentUrl = documentUrl(call, resolvedPath),
+            ),
         )
         val visit = isVisit(call)
         val filtered = if (visit) applyPartial(call, seed) else seed

@@ -8,6 +8,7 @@ export type HeadInput = {
   canonical?: string | null
   image?: string | null
   type?: string | null
+  html?: string | null
 }
 
 export function setTitle(title: string): void {
@@ -17,6 +18,7 @@ export function setTitle(title: string): void {
 
 export function applyHead(head: HeadInput): () => void {
   if (typeof document === "undefined") return () => undefined
+  if (head.html) return applyHeadHtml(head.html, head.title)
   clearKeelHead()
   const created: Element[] = []
   if (head.title) {
@@ -46,6 +48,32 @@ export function applyHead(head: HeadInput): () => void {
     upsert("meta", { name: "twitter:card", content: "summary" }, created)
   }
   upsert("meta", { property: "og:type", content: head.type ?? "website" }, created)
+  return () => {
+    for (const el of created) el.remove()
+  }
+}
+
+function applyHeadHtml(html: string, title?: string | null): () => void {
+  clearKeelHead()
+  const created: Element[] = []
+  const template = document.createElement("template")
+  template.innerHTML = html
+  for (const node of [...template.content.childNodes]) {
+    if (!(node instanceof Element)) continue
+    node.setAttribute(ATTR, "")
+    if (node.tagName === "TITLE") {
+      document.title = node.textContent ?? title ?? document.title
+      const existing = document.querySelector("title")
+      if (existing) {
+        existing.setAttribute(ATTR, "")
+        existing.textContent = node.textContent
+        continue
+      }
+    }
+    document.head.appendChild(node)
+    created.push(node)
+  }
+  if (title) document.title = title
   return () => {
     for (const el of created) el.remove()
   }
@@ -83,5 +111,6 @@ export function fromPageHead(head: PageHead | null | undefined, fallback?: HeadI
     canonical: fallback?.canonical ?? head?.canonical,
     image: fallback?.image ?? head?.image,
     type: fallback?.type ?? head?.type,
+    html: fallback?.html ?? head?.html,
   }
 }

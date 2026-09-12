@@ -2,7 +2,7 @@ import { existsSync } from "node:fs"
 import { resolve } from "node:path"
 import type { Plugin } from "vite"
 import type { DiscoveredPage, RouterAdapter } from "./adapter.ts"
-import { cssFromBundle, writePackManifest, type ManifestBundle } from "./manifest-write.ts"
+import { cssFromBundle, writePackManifest, type ManifestBundle, type PackManifestPage } from "./manifest-write.ts"
 import { packFeb } from "./pack-feb.ts"
 import { svelteFiles } from "./svelte.ts"
 import type { PackManifest } from "./manifest-write.ts"
@@ -111,7 +111,7 @@ export function keelPack(options: KeelPackOptions): Plugin {
       return adapter.entrySource(page)
     },
     writeBundle(outputOptions, bundle) {
-      const pagesMap: Record<string, { module: string; css: string[] }> = {}
+      const pagesMap: Record<string, PackManifestPage> = {}
       const chunks = bundle as ManifestBundle
       for (const page of pages) {
         const name = `pages/${page.id}`
@@ -125,6 +125,7 @@ export function keelPack(options: KeelPackOptions): Plugin {
         pagesMap[page.id] = {
           module: chunk.fileName,
           css: cssFromBundle(chunk.fileName, chunks),
+          ...(page.head ? { head: page.head } : {}),
         }
       }
       const outDir = outputOptions.dir ?? resolve(root, "dist")

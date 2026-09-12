@@ -9,4 +9,5 @@ data class PageImplementation(
     val module: String,
     val css: List<String>,
     val layout: String?,
+    val head: String? = null,
 )

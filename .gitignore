@@ -76,6 +76,8 @@ coverage/
 /package-lock.json
 /.prettierrc
 /.project_id
+/.ai/
+/.aiignore
 
 .claude/settings.local.json
 packages/svelte/test/.compiled/

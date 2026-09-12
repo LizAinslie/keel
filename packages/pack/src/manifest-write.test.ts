@@ -42,6 +42,30 @@ test("writePackManifest writes keel/1 JSON", () => {
   assert.equal(written.notFound, "pages/harbor.notFound.js")
 })
 
+test("writePackManifest round-trips page head and omits it otherwise", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "keel-manifest-head-"))
+  const manifest = writePackManifest({
+    outDir,
+    id: "harbor",
+    version: "0.1.0",
+    framework: "svelte",
+    host: "#__keel_root",
+    pages: {
+      "harbor.home": {
+        module: "pages/harbor.home.js",
+        css: [],
+        head: '<title>Harbor</title><meta name="description" content="A board." />',
+      },
+      "harbor.user": { module: "pages/harbor.user.js", css: [] },
+    },
+  })
+  const raw = readFileSync(join(outDir, "manifest.json"), "utf8")
+  assert.deepEqual(manifest.pages["harbor.home"]?.head, '<title>Harbor</title><meta name="description" content="A board." />')
+  assert.equal(manifest.pages["harbor.user"]?.head, undefined)
+  assert.match(raw, /"head": "<title>Harbor<\/title>/)
+  assert.equal(JSON.parse(raw).pages["harbor.user"].head, undefined)
+})
+
 test("writePackManifest fails on unknown contract ids", () => {
   const root = mkdtempSync(join(tmpdir(), "keel-manifest-contract-"))
   const contract = join(root, "page-types.ts")

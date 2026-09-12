@@ -103,11 +103,30 @@ test("duplicate ids throw with both file paths", () => {
   assert.throws(() => svelteFiles().discover(pagesDir), /duplicate page id 'harbor.home'/)
 })
 
+test("sibling +head.svelte is compiled into the discovered page head", () => {
+  const pagesDir = writeTree({
+    "harbor/home/+page.svelte": "<h1>home</h1>\n",
+    "harbor/home/+head.svelte":
+      '<script lang="ts">let { seed } = $props()</script>\n<title>{seed.data.title} — Harbor</title>\n<meta name="description" content="A board." />\n',
+  })
+  const [page] = svelteFiles().discover(pagesDir)
+  assert.equal(page?.head, '<title>{{data.title}} — Harbor</title>\n<meta name="description" content="A board." />')
+})
+
+test("pages without +head.svelte have no compiled head", () => {
+  const pagesDir = writeTree({
+    "harbor/home/+page.svelte": "<h1>home</h1>\n",
+  })
+  const [page] = svelteFiles().discover(pagesDir)
+  assert.equal(page?.head, undefined)
+})
+
 test("entrySource imports createPage and lists layouts", () => {
   const source = svelteFiles().entrySource({
     id: "harbor.home",
     file: "/proj/src/pages/harbor/home/+page.svelte",
     layouts: ["/proj/src/pages/+layout.svelte", "/proj/src/pages/harbor/+layout.svelte"],
+    head: "<title>Harbor</title>",
   })
   assert.equal(
     source,

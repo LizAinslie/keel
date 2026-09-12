@@ -1,9 +1,11 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { basename, dirname, join, relative } from "node:path"
 import type { DiscoveredPage, RouterAdapter } from "./adapter.ts"
+import { compileHeadTemplate } from "./head-template.ts"
 
 const PAGE_FILE = "+page.svelte"
 const PAGE_ID_FILE = "+page.ts"
+const HEAD_FILE = "+head.svelte"
 const LAYOUT_FILE = "+layout.svelte"
 const ID_OVERRIDE = /export\s+const\s+id\s*=\s*["']([^"']+)["']/
 
@@ -25,7 +27,16 @@ export function svelteFiles(): RouterAdapter {
           throw new Error(`duplicate page id '${id}' from ${previous} and ${file}`)
         }
         seen.set(id, file)
-        pages.push({ id, file, layouts: layoutsFor(pagesDir, file) })
+        const headFile = join(dirname(file), HEAD_FILE)
+        const head = existsSync(headFile)
+          ? compileHeadTemplate(readFileSync(headFile, "utf8"), headFile)
+          : undefined
+        pages.push({
+          id,
+          file,
+          layouts: layoutsFor(pagesDir, file),
+          ...(head !== undefined ? { head } : {}),
+        })
       }
       pages.sort((a, b) => a.id.localeCompare(b.id))
       return pages
