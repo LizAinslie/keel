@@ -34,4 +34,4 @@ Docs: https://keel.mey.cat/  (GitHub Pages; local `pnpm dev` is http://127.0.0.1
 - [keel-pack](https://raw.githubusercontent.com/kolektivdev/keel/main/skills/keel-pack/SKILL.md): author a frontend pack
 - [keel-scaffold](https://raw.githubusercontent.com/kolektivdev/keel/main/skills/keel-scaffold/SKILL.md): scaffold a pack from `/__keel/schema`
 
-Install: copy `skills/*` into `.claude/skills/`, `.grok/skills/`, or `.agents/skills/`. See `skills/README.md`.
+Install: `npx skills add kolektivdev/keel`. Or copy `skills/*` into `.claude/skills/`, `.grok/skills/`, or `.agents/skills/`. See `skills/README.md`.

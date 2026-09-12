@@ -13,9 +13,20 @@ layout.
 
 ## Install
 
-Copy the folders you want into the agent's project skills directory (or
-symlink). One copy in this repo is the source of truth — do not fork the
-markdown into per-agent trees.
+```bash
+npx skills add kolektivdev/keel
+```
+
+Installs all three skills into the current project. Useful flags:
+
+- `-a claude-code -a grok -a kilo` — target specific agents (repeatable).
+- `-g` — install globally (`~/.<agent>/skills`) instead of the project.
+- `--copy` — copy instead of symlinking; useful on Windows or in Docker.
+- `--skill keel-host` — install just one skill.
+
+You can also copy the folders you want into the agent's project skills
+directory (or symlink). One copy in this repo is the source of truth — do not
+fork the markdown into per-agent trees.
 
 ```bash
 # Claude Code (project)
@@ -31,8 +42,5 @@ cp -R skills/keel-host skills/keel-pack skills/keel-scaffold .agents/skills/
 
 Personal (all repos): the same paths under `~/.claude/skills`, `~/.grok/skills`,
 or `~/.agents/skills`.
-
-Marketplace-style CLIs that look for `skills/*/SKILL.md` at the repo root
-(`npx skills add <owner>/<repo>`) can install from this repository as-is.
 
 `llms.txt` at the site root lists these skills with raw URLs.

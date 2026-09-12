@@ -1,0 +1,10 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "groupings": [
+    {
+      "title": "Keel",
+      "description": "Implement Keel hosts and author frontend packs.",
+      "skills": ["keel-host", "keel-pack", "keel-scaffold"]
+    }
+  ]
+}
