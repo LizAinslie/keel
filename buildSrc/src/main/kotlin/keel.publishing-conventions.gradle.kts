@@ -77,7 +77,7 @@ publishing {
 
 signing {
     val hasSigning = providers.gradleProperty("signing.keyId").isPresent
-    isRequired = hasSigning && !project.version.toString().endsWith("SNAPSHOT")
+    isRequired = hasSigning && !project.version.toString().contains("SNAPSHOT", ignoreCase = true)
     if (hasSigning) {
         sign(publishing.publications)
     }

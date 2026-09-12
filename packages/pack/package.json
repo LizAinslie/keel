@@ -1,6 +1,6 @@
 {
   "name": "@kolektiv/keel-pack",
-  "version": "0.0.1",
+  "version": "0.0.2-SNAPSHOT.1",
   "description": "Zip a Keel pack dist into a .feb archive, scaffold packs from /__keel/schema, and a Vite plugin to discover pages.",
   "type": "module",
   "license": "Apache-2.0",
