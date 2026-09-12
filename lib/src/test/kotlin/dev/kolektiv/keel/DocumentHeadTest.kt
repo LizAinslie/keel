@@ -125,6 +125,49 @@ class DocumentHeadTest {
     }
 
     @Test
+    fun `host nonce is stamped on pack script and link tags`() {
+        val head = DocumentHead.resolve(
+            packHtml = """<link rel="icon" href="/favicon.svg" />""" +
+                """<script src="/client.js"></script>""" +
+                """<meta name="description" content="A board." />""",
+            host = null,
+            seed = seed,
+            documentUrl = "http://localhost:8090/",
+            nonce = "host-nonce",
+        )
+        val html = head?.html.orEmpty()
+        assertTrue(html.contains("href=\"http://localhost:8090/favicon.svg\" nonce=\"host-nonce\""), html)
+        assertTrue(html.contains("src=\"http://localhost:8090/client.js\" nonce=\"host-nonce\""), html)
+        assertEquals(2, Regex("nonce=\"host-nonce\"").findAll(html).count(), html)
+    }
+
+    @Test
+    fun `pack supplied nonce is stripped and the host nonce wins`() {
+        val head = DocumentHead.resolve(
+            packHtml = """<script src="/client.js" nonce="forged"></script>""",
+            host = null,
+            seed = seed,
+            documentUrl = "http://localhost:8090/",
+            nonce = "host-nonce",
+        )
+        val html = head?.html.orEmpty()
+        assertTrue(html.contains("nonce=\"host-nonce\""), html)
+        assertTrue(!html.contains("forged"), html)
+    }
+
+    @Test
+    fun `no nonce attributes when the host passes none`() {
+        val head = DocumentHead.resolve(
+            packHtml = """<link rel="icon" href="/favicon.svg" /><script src="/client.js"></script>""",
+            host = null,
+            seed = seed,
+            documentUrl = "http://localhost:8090/",
+        )
+        val html = head?.html.orEmpty()
+        assertTrue(!html.contains("nonce"), html)
+    }
+
+    @Test
     fun `url sanitizing keeps only site-relative and http urls`() {
         assertNull(DocumentHead.sanitizeUrl("javascript:alert(1)"))
         assertNull(DocumentHead.sanitizeUrl("data:text/html,x"))

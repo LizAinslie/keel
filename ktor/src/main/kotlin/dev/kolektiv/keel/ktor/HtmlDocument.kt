@@ -10,7 +10,13 @@ import kotlinx.serialization.json.put
 internal object HtmlDocument {
     const val HEAD_ATTR: String = "data-keel-head"
 
-    fun render(title: String, seedJson: String, seed: KeelSeed, bootstrapUrl: String): String {
+    fun render(
+        title: String,
+        seedJson: String,
+        seed: KeelSeed,
+        bootstrapUrl: String,
+        nonce: String? = null,
+    ): String {
         val css = seed.css.joinToString("\n") { href ->
             """<link rel="stylesheet" href="${escapeAttr(href)}" data-keel-css>"""
         }
@@ -22,7 +28,7 @@ internal object HtmlDocument {
             appendLine("<head>")
             appendLine("<meta charset=\"utf-8\">")
             appendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-            appendHeadTags(this, documentTitle, seed.head, seed.path)
+            appendHeadTags(this, documentTitle, seed.head, seed.path, nonce)
             if (css.isNotEmpty()) {
                 appendLine(css)
             }
@@ -39,18 +45,33 @@ internal object HtmlDocument {
             appendLine("</div>")
             append("<script type=\"application/json\" id=\"")
             append(Keel.SEED_ELEMENT_ID)
-            append("\">")
+            append('"')
+            nonceAttr(this, nonce)
+            append(">")
             append(seedJson)
             appendLine("</script>")
             append("<script type=\"module\" src=\"")
             append(escapeAttr(bootstrapUrl))
-            appendLine("\"></script>")
+            append('"')
+            nonceAttr(this, nonce)
+            appendLine("></script>")
             appendLine("</body>")
             appendLine("</html>")
         }
     }
 
-    private fun appendHeadTags(out: StringBuilder, documentTitle: String, head: PageHead?, path: String) {
+    private fun nonceAttr(out: StringBuilder, nonce: String?) {
+        if (nonce == null) return
+        out.append(" nonce=\"").append(escapeAttr(nonce)).append('"')
+    }
+
+    private fun appendHeadTags(
+        out: StringBuilder,
+        documentTitle: String,
+        head: PageHead?,
+        path: String,
+        nonce: String?,
+    ) {
         val packHtml = head?.html
         if (!packHtml.isNullOrBlank()) {
             if (!packHtml.contains("<title", ignoreCase = true)) {
@@ -95,6 +116,7 @@ internal object HtmlDocument {
             "script",
             mapOf("type" to "application/ld+json"),
             encodeSeedJson(KeelJson.codec.encodeToString(ld)),
+            nonce,
         )
     }
 
@@ -112,12 +134,19 @@ internal object HtmlDocument {
         out.append("</noscript>")
     }
 
-    private fun tagged(out: StringBuilder, tag: String, attrs: Map<String, String>, inner: String) {
+    private fun tagged(
+        out: StringBuilder,
+        tag: String,
+        attrs: Map<String, String>,
+        inner: String,
+        nonce: String? = null,
+    ) {
         out.append('<').append(tag)
         out.append(" ").append(HEAD_ATTR).append("=\"\"")
         for ((key, value) in attrs) {
             out.append(' ').append(key).append("=\"").append(escapeAttr(value)).append('"')
         }
+        if (tag == "script") nonceAttr(out, nonce)
         out.append('>')
         out.append(inner)
         out.append("</").append(tag).appendLine('>')

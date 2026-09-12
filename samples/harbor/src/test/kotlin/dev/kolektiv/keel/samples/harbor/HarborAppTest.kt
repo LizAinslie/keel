@@ -100,6 +100,31 @@ class HarborAppTest {
     }
 
     @Test
+    fun `document shell carries a csp nonce and matching header`() = testApplication {
+        writePack()
+        application { harbor(FrontendBundle.fromDirectory(pack)) }
+        val response = client.get("/")
+        assertEquals(HttpStatusCode.OK, response.status)
+        val header = response.headers["Content-Security-Policy"]
+        assertTrue(!header.isNullOrBlank())
+        val nonce = Regex("'nonce-([^']+)'").find(header!!)!!.groupValues[1]
+        assertEquals(
+            "script-src 'nonce-$nonce' 'strict-dynamic'; style-src 'self'; object-src 'none'; base-uri 'none'",
+            header,
+        )
+        val body = response.bodyAsText()
+        assertTrue(body.contains("id=\"__keel_seed\" nonce=\"$nonce\""), body)
+        assertTrue(body.contains("src=\"/__keel/pack/harbor/bootstrap.js\" nonce=\"$nonce\""), body)
+        assertTrue(body.contains("href=\"http://localhost/logo.svg\" nonce=\"$nonce\""), body)
+
+        val visit = client.get("/") {
+            header(KeelHeaders.VISIT, "true")
+        }
+        assertEquals(null, visit.headers["Content-Security-Policy"])
+        assertTrue(!visit.bodyAsText().contains("nonce"))
+    }
+
+    @Test
     fun `setName action sets a cookie and visit sees the viewer`() = testApplication {
         writePack()
         application { harbor(FrontendBundle.fromDirectory(pack)) }
@@ -236,7 +261,7 @@ class HarborAppTest {
 
     private companion object {
         val HOME_HEAD =
-            """<title>Harbor</title><meta name="description" content="An in-memory message board. Set a display name and post." /><meta property="og:title" content="Harbor" /><meta property="og:type" content="website" />"""
+            """<title>Harbor</title><meta name="description" content="An in-memory message board. Set a display name and post." /><meta property="og:title" content="Harbor" /><meta property="og:type" content="website" /><link rel="icon" href="/logo.svg" />"""
         val USER_HEAD =
             """<title>{{data.user.displayName}} — Harbor</title><meta name="description" content="Messages from {{data.user.displayName}}." /><meta property="og:title" content="{{data.user.displayName}} — Harbor" />"""
         val NOT_FOUND_HEAD =
