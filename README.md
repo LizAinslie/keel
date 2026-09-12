@@ -12,11 +12,11 @@ Host-owned routing and swappable frontend packs for Kotlin servers.
 Agents (human or otherwise) should read [AGENTS.md](./AGENTS.md).
 
 - `buildSrc/` — Kotlin JVM + Maven publish conventions
-- `lib/` — seed, manifest, page registry, `FrontendBundle`, typegen, theme resolver (no Ktor)
+- `lib/` — seed, manifest, page registry, `FrontendBundle`, typegen (no Ktor)
 - `ktor/` — Ktor plugin: document shell, `respondPage`, visits, pack static files
 - `samples/harbor` — in-memory message board (Ktor + Svelte pack; `./gradlew :samples:harbor:run`)
 - `packages/` — TypeScript router, Svelte bindings, and `keel-pack` (`.feb` zip + `keel-scaffold`)
-- `skills/` — Agent Skills for Claude, Grok, and `.agents/skills`
+- `skills/` — Agent Skills for Claude, Grok, and `.agents/skills` (`npx skills add kolektivdev/keel`)
 - `llms.txt` — curated map for LLMs (also served from the docs site)
 - `docs/` — homepage and documentation (Astro, Tailwind 4, daisyUI 5, Shiki Catppuccin)
 - `public/logo.svg` — product mark (also `favicon.svg`); `public/mark.svg` is the hull glyph
