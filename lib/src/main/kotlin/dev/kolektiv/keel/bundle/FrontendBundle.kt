@@ -36,6 +36,7 @@ class FrontendBundle private constructor(
             module = entry.module,
             css = entry.css,
             layout = entry.layout,
+            head = entry.head,
         )
     }
 

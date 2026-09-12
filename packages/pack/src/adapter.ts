@@ -6,6 +6,8 @@ export interface DiscoveredPage {
   id: string
   file: string
   layouts: string[]
+  /** Compiled `+head.svelte` markup with `{{seed.path}}` placeholders. */
+  head?: string
 }
 
 export interface RouterAdapter {

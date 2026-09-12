@@ -14,6 +14,7 @@ data class KeelThemeRef(
     val version: String,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PageHead(
     val title: String,
@@ -21,6 +22,9 @@ data class PageHead(
     val canonical: String? = null,
     val image: String? = null,
     val type: String? = null,
+    /** Sanitized pack-authored head tags. Present when the pack shipped a head template. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val html: String? = null,
 )
 
 /**

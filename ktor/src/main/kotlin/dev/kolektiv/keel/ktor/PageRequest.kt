@@ -35,22 +35,7 @@ class PageRequest(
      * Absolute URL for this document. Used as the default canonical / `og:url`
      * so crawlers that do not run JS still see a stable locator.
      */
-    fun documentUrl(): String {
-        val origin = call.request.origin
-        val hostHeader = call.request.header("Host")
-        val host = hostHeader?.ifBlank { null } ?: origin.serverHost.ifBlank { return path }
-        val scheme = call.request.header("X-Forwarded-Proto")?.ifBlank { null }
-            ?: origin.scheme.ifBlank { "http" }
-        val hostHasPort = host.contains(':')
-        val port = origin.serverPort
-        val portPart = when {
-            hostHasPort -> ""
-            scheme == "https" && (port == 443 || port == 0) -> ""
-            scheme == "http" && (port == 80 || port == 0) -> ""
-            else -> ":$port"
-        }
-        return "$scheme://$host$portPart$path"
-    }
+    fun documentUrl(): String = documentUrl(call, path)
 
     fun head(
         title: String,
@@ -90,4 +75,21 @@ class PageRedirectException(val to: String) : Exception("redirect to $to") {
     init {
         require(to.startsWith("/")) { "redirect must be an absolute path, got '$to'" }
     }
+}
+
+internal fun documentUrl(call: ApplicationCall, path: String): String {
+    val origin = call.request.origin
+    val hostHeader = call.request.header("Host")
+    val host = hostHeader?.ifBlank { null } ?: origin.serverHost.ifBlank { return path }
+    val scheme = call.request.header("X-Forwarded-Proto")?.ifBlank { null }
+        ?: origin.scheme.ifBlank { "http" }
+    val hostHasPort = host.contains(':')
+    val port = origin.serverPort
+    val portPart = when {
+        hostHasPort -> ""
+        scheme == "https" && (port == 443 || port == 0) -> ""
+        scheme == "http" && (port == 80 || port == 0) -> ""
+        else -> ":$port"
+    }
+    return "$scheme://$host$portPart$path"
 }

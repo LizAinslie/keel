@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { Head, Link, page } from "@kolektiv/keel-svelte"
+  import { Link, page } from "@kolektiv/keel-svelte"
   import type { UserPage } from "../../../lib/page-types"
 
   const ctx = page<UserPage>()
 </script>
-
-<Head />
 
 <h1>{ctx.data.user.displayName}</h1>
 <p class="lede">Messages from {ctx.data.user.displayName}.</p>

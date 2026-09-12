@@ -22,12 +22,17 @@ export interface KeelThemeRef {
   version: string
 }
 
+/**
+ * Resolved document head on the seed. `html` is sanitized pack markup for
+ * the document GET; visits may still carry it so the client can sync.
+ */
 export interface PageHead {
   title: string
   description?: string | null
   canonical?: string | null
   image?: string | null
   type?: string | null
+  html?: string | null
 }
 
 export interface KeelSeed<T = unknown> {
@@ -51,6 +56,8 @@ export interface KeelPageEntry {
   module: string
   css?: string[]
   layout?: string | null
+  /** Pack-authored head HTML template (`{{data.user.displayName}}`). */
+  head?: string | null
 }
 
 export interface KeelManifest {

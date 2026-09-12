@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ActionError, Head, Link, page, useAction } from "@kolektiv/keel-svelte"
+  import { ActionError, Link, page, useAction } from "@kolektiv/keel-svelte"
   import type { HomePage, PostMessageIn, PostMessageOut, SetNameIn, SetNameOut } from "../../../lib/page-types"
 
   const ctx = page<HomePage>()
@@ -34,8 +34,6 @@
       .catch(() => undefined)
   }
 </script>
-
-<Head />
 
 <h1>Harbor</h1>
 <p class="lede">A message board. The seed is the read model. Actions write; visits rehydrate.</p>

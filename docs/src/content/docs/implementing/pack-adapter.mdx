@@ -61,6 +61,11 @@ There is no nested pack directory. Format `keel/1`:
 `keel-pack` zips a Vite dist into that archive. The Vite plugin
 (`keelPack`) discovers pages, writes the manifest, and calls a packager.
 
+A page entry may also carry `head`, the compiled markup from a sibling
+`+head.svelte`. The host substitutes its `{{seed.path}}` placeholders and
+renders it on the document GET. See
+<a href={path("/docs/core-concepts/head")}>Document head and SEO</a>.
+
 ## RouterAdapter
 
 `RouterAdapter` maps files to page ids — never URL params:
