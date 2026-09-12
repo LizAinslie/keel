@@ -1,6 +1,7 @@
 package dev.kolektiv.keel.samples.harbor
 
 import dev.kolektiv.keel.bundle.FrontendBundle
+import dev.kolektiv.keel.ktor.CspPolicy
 import dev.kolektiv.keel.ktor.PageMissingException
 import dev.kolektiv.keel.ktor.SharedProvider
 import dev.kolektiv.keel.ktor.keel
@@ -13,6 +14,7 @@ fun Application.harbor(bundle: FrontendBundle) {
         this.bundle = bundle
         title = "Harbor"
         notFoundPageId = "harbor.notFound"
+        csp = CspPolicy.nonce()
         shared = SharedProvider { call, _, _, _ ->
             buildJsonObject {
                 put("site", "Harbor")

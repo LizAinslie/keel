@@ -14,7 +14,9 @@ import kotlinx.serialization.json.put
  *
  * The pack ships an HTML template (compiled from `+head.svelte` or equivalent).
  * The host substitutes `{{path}}` from the seed, allowlists tags/attrs, drops
- * unsafe URLs, and never throws on a document GET.
+ * unsafe URLs, and never throws on a document GET. A host-provided [resolve]
+ * nonce is stamped on emitted `<script>`/`<link>` tags; a pack-supplied
+ * `nonce` attribute is not allowlisted and is stripped.
  */
 object DocumentHead {
     const val HEAD_ATTR: String = "data-keel-head"
@@ -36,13 +38,14 @@ object DocumentHead {
         host: PageHead?,
         seed: KeelSeed,
         documentUrl: String?,
+        nonce: String? = null,
     ): PageHead? {
         if (packHtml.isNullOrBlank()) {
             return host?.let { fillCanonical(it, documentUrl) }
         }
         val root = lookupRoot(seed)
         val tags = parse(packHtml).mapNotNull { tag -> substituteTag(tag, root, documentUrl) }
-        val html = emit(tags).ifBlank { null }
+        val html = emit(tags, nonce).ifBlank { null }
         val title = textOf(tags, "title") ?: host?.title
         val description = meta(tags, "name", "description") ?: host?.description
         val canonical = attrOf(tags, "link", "rel", "canonical", "href") ?: host?.canonical
@@ -267,7 +270,7 @@ object DocumentHead {
         return value.startsWith("/") || value.startsWith("http:") || value.startsWith("https:")
     }
 
-    private fun emit(tags: List<Tag>): String = buildString {
+    private fun emit(tags: List<Tag>, nonce: String?): String = buildString {
         for (tag in tags) {
             append('<').append(tag.name)
             append(' ').append(HEAD_ATTR).append("=\"\"")
@@ -275,6 +278,9 @@ object DocumentHead {
                 append(' ').append(name)
                 if (value.isEmpty() && name in setOf("async", "defer", "nomodule")) continue
                 append("=\"").append(escapeAttr(value)).append('"')
+            }
+            if (nonce != null && (tag.name == "script" || tag.name == "link")) {
+                append(" nonce=\"").append(escapeAttr(nonce)).append('"')
             }
             if (tag.name in voidTags) {
                 append('>')

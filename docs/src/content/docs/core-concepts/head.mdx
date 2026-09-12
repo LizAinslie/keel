@@ -66,6 +66,29 @@ document URL.
 }`}
 />
 
+## CSP nonces
+
+Set `KeelConfig.csp` to send a `Content-Security-Policy` on document
+responses. Keel generates one nonce per document (16 random bytes, Base64
+URL-safe) and stamps it on the shell scripts (`#__keel_seed`, the bootstrap
+module, fallback `application/ld+json`) and on pack-declared `<script src>` /
+`<link>` tags. Pack-supplied `nonce` attributes are stripped, so a pack
+cannot forge one.
+
+<CodeBlock
+  lang="kotlin"
+  bw="ktor"
+  title="Opt-in CSP"
+  code={`keel {
+    csp = CspPolicy.nonce()
+}`}
+/>
+
+`CspPolicy.nonce()` emits `script-src 'nonce-…' 'strict-dynamic'; style-src
+'self'; object-src 'none'; base-uri 'none'`. Without `csp` no header is sent,
+and documents still carry a nonce. Visits return JSON only: no nonce and no
+CSP header.
+
 ## Visits stay JSON
 
 A visit returns the same resolved head on `seed.head`, including `html`. The

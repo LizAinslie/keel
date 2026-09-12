@@ -25,8 +25,13 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -77,31 +82,28 @@ class KeelKtorTest {
             "form" to "pages/form.js",
         ),
         notFound: String? = "pages/missing.js",
+        heads: Map<String, String> = emptyMap(),
     ) {
-        val pageEntries = pages.entries.joinToString(",\n") { (pageId, module) ->
-            val css = if (pageId == "home") """, "css": ["assets/styles.css"]""" else ""
-            """"$pageId": { "module": "$module"$css }"""
-        }
-        val notFoundLine = if (notFound != null) {
-            """,
-              "notFound": "$notFound""""
-        } else {
-            ""
-        }
-        dir.resolve("manifest.json").writeText(
-            """
-            {
-              "format": "keel/1",
-              "id": "$id",
-              "version": "0.1.0",
-              "framework": "svelte",
-              "host": "#__keel_root",
-              "pages": {
-                $pageEntries
-              }$notFoundLine
+        val manifest = buildJsonObject {
+            put("format", "keel/1")
+            put("id", id)
+            put("version", "0.1.0")
+            put("framework", "svelte")
+            put("host", "#__keel_root")
+            putJsonObject("pages") {
+                for ((pageId, module) in pages) {
+                    putJsonObject(pageId) {
+                        put("module", module)
+                        if (pageId == "home") {
+                            putJsonArray("css") { add("assets/styles.css") }
+                        }
+                        heads[pageId]?.let { put("head", it) }
+                    }
+                }
             }
-            """.trimIndent(),
-        )
+            if (notFound != null) put("notFound", notFound)
+        }
+        dir.resolve("manifest.json").writeText(manifest.toString())
         dir.resolve("bootstrap.js").writeText("export {}")
         dir.resolve("pages").createDirectories()
         for (module in pages.values) {
@@ -111,11 +113,12 @@ class KeelKtorTest {
         dir.resolve("assets/styles.css").writeText("body{}")
     }
 
-    private fun Application.installSample() {
+    private fun Application.installSample(csp: CspPolicy? = null) {
         keel {
             bundle = FrontendBundle.fromDirectory(pack)
             title = "Harbor"
             notFoundPageId = "missing"
+            this.csp = csp
             pages {
                 page<HomePage>("home", "/") {
                     head("Home title", description = "A greeting.")
@@ -180,6 +183,59 @@ class KeelKtorTest {
         assertTrue(body.contains("<noscript>"))
         assertTrue(body.contains("rel=\"modulepreload\""))
         assertTrue(body.contains("data-keel-css"))
+    }
+
+    @Test
+    fun `document GET with csp stamps one nonce on shell scripts and pack head assets`() = testApplication {
+        writePack(
+            heads = mapOf(
+                "home" to """<link rel="icon" href="/favicon.svg" /><script src="/head.js"></script>""",
+            ),
+        )
+        application { installSample(CspPolicy.nonce()) }
+        val response = client.get("/")
+        assertEquals(HttpStatusCode.OK, response.status)
+        val header = response.headers["Content-Security-Policy"]
+        assertTrue(!header.isNullOrBlank())
+        val nonce = Regex("'nonce-([^']+)'").find(header!!)!!.groupValues[1]
+        assertEquals(
+            "script-src 'nonce-$nonce' 'strict-dynamic'; style-src 'self'; object-src 'none'; base-uri 'none'",
+            header,
+        )
+        val body = response.bodyAsText()
+        assertTrue(body.contains("id=\"__keel_seed\" nonce=\"$nonce\""), body)
+        assertTrue(body.contains("src=\"/__keel/pack/harbor/bootstrap.js\" nonce=\"$nonce\""), body)
+        assertTrue(body.contains("href=\"http://localhost/favicon.svg\" nonce=\"$nonce\""), body)
+        assertTrue(body.contains("src=\"http://localhost/head.js\" nonce=\"$nonce\""), body)
+        assertEquals(4, Regex("nonce=\"$nonce\"").findAll(body).count(), body)
+    }
+
+    @Test
+    fun `visit carries no csp header and no nonce`() = testApplication {
+        writePack(
+            heads = mapOf(
+                "home" to """<link rel="icon" href="/favicon.svg" /><script src="/head.js"></script>""",
+            ),
+        )
+        application { installSample(CspPolicy.nonce()) }
+        val response = client.get("/") {
+            header(KeelHeaders.VISIT, "true")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(null, response.headers["Content-Security-Policy"])
+        assertTrue(!response.bodyAsText().contains("nonce"))
+    }
+
+    @Test
+    fun `without csp no header but documents still carry a nonce`() = testApplication {
+        writePack()
+        application { installSample() }
+        val response = client.get("/")
+        assertEquals(null, response.headers["Content-Security-Policy"])
+        val body = response.bodyAsText()
+        val nonce = Regex("nonce=\"([^\"]+)\"").find(body)!!.groupValues[1]
+        assertTrue(nonce.isNotBlank())
+        assertEquals(3, Regex("nonce=\"$nonce\"").findAll(body).count(), body)
     }
 
     @Test

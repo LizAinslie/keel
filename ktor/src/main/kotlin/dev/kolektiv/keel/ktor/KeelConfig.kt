@@ -65,6 +65,15 @@ class KeelConfig {
     var csrf: CsrfPolicy? = null
     var csrfAllowedOrigins: Set<String> = emptySet()
 
+    /**
+     * Opt-in CSP for document responses. When set, Keel stamps one nonce
+     * per document onto its shell scripts and pack-declared head
+     * `<script>`/`<link>` tags, then sends [CspPolicy.header]. Visits stay
+     * nonce-less and header-less. Default off so existing hosts are
+     * unaffected.
+     */
+    var csp: CspPolicy? = null
+
     @PublishedApi
     internal val registry: PageRegistry = PageRegistry()
     @PublishedApi

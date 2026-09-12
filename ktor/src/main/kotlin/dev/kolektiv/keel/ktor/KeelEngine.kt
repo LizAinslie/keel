@@ -174,17 +174,19 @@ internal class KeelEngine(private val config: KeelConfig) {
             layout = impl.layout,
             redirect = redirect,
         )
+        val visit = isVisit(call)
+        val nonce = if (visit) null else CspPolicy.generateNonce()
         val seed = draft.copy(
             head = DocumentHead.resolve(
                 packHtml = impl.head,
                 host = head,
                 seed = draft,
                 documentUrl = documentUrl(call, resolvedPath),
+                nonce = nonce,
             ),
         )
-        val visit = isVisit(call)
         val filtered = if (visit) applyPartial(call, seed) else seed
-        respondSeed(call, filtered, status, bundle)
+        respondSeed(call, filtered, status, bundle, nonce)
     }
 
     private fun applyPartial(call: ApplicationCall, seed: KeelSeed): KeelSeed {
@@ -414,6 +416,7 @@ internal class KeelEngine(private val config: KeelConfig) {
         seed: KeelSeed,
         status: HttpStatusCode,
         bundle: FrontendBundle,
+        nonce: String? = null,
     ) {
         val raw = KeelJson.codec.encodeToString(KeelSeed.serializer(), seed)
         call.response.header(KeelHeaders.VERSION, seed.theme.version)
@@ -422,9 +425,13 @@ internal class KeelEngine(private val config: KeelConfig) {
             call.respondText(raw, ContentType.Application.Json, status)
             return
         }
+        val csp = config.csp
+        if (csp != null && nonce != null) {
+            call.response.header("Content-Security-Policy", csp.header(nonce))
+        }
         val json = HtmlDocument.encodeSeedJson(raw)
         val bootstrap = assetUrl(bundle, config.bootstrap)
-        val html = HtmlDocument.render(config.title, json, seed, bootstrap)
+        val html = HtmlDocument.render(config.title, json, seed, bootstrap, nonce)
         call.respondText(html, ContentType.Text.Html, status)
     }
 
