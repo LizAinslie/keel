@@ -29,7 +29,7 @@ jobs:
         env:
           YURI_CAPITAL_REPO_USERNAME: ${{ secrets.YURI_CAPITAL_REPO_USERNAME }}
           YURI_CAPITAL_REPO_PASSWORD: ${{ secrets.YURI_CAPITAL_REPO_PASSWORD }}
-        run: ./gradlew :lib:publish :ktor:publish
+        run: bash .github/scripts/publish-maven.sh
 
   npm:
     runs-on: ubuntu-latest

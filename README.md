@@ -35,7 +35,7 @@ the JS workspace on Node 22. Implementing-Keel guides live under
 `docs/src/content/docs/implementing/`.
 
 Consumers resolve **one** Maven repo — `maven-releases` for numbered
-versions, or `maven-snapshots` for `*-SNAPSHOT*` — never both. npm is the
+versions, or `maven-snapshots` for `*-SNAPSHOT` — never both. npm is the
 same split (`npm-releases` / `npm-snapshots` groups). Maintainers publish
 Maven to `keel-maven` plus the matching hosted Maven repo, and npm only to
 hosted `keel-npm` (groups reject PUT). Credentials: GitHub Actions secrets

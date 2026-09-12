@@ -84,10 +84,11 @@ in; do not reformat unrelated code or add deps without a need.
 
 ## Publishing
 
-Maven (`./gradlew :lib:publish :ktor:publish`) always goes to
-`https://repo.yuri.capital/repository/keel-maven/`. Versions that contain
-`SNAPSHOT` also go to `…/maven-snapshots/`; otherwise also to
-`…/maven-releases/`.
+Maven publishing (`bash .github/scripts/publish-maven.sh`) always goes to
+`https://repo.yuri.capital/repository/keel-maven/`. Versions that end in
+`-SNAPSHOT` also go to `…/maven-snapshots/`; otherwise also to
+`…/maven-releases/`. Versions already present in the target repo are skipped,
+and conflicts from redeploys to `keel-maven` are tolerated.
 
 npm (`bash .github/scripts/publish-npm.sh`) publishes only to the hosted
 repo `https://repo.yuri.capital/repository/keel-npm/`. `npm-releases` and

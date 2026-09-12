@@ -12,6 +12,8 @@ val febLicenseName = providers.gradleProperty("keel.licenseName").orElse("Apache
 val febLicenseUrl = providers.gradleProperty("keel.licenseUrl")
     .orElse("https://www.apache.org/licenses/LICENSE-2.0.txt")
 
+val isSnapshot = project.version.toString().endsWith("-SNAPSHOT")
+
 publishing {
     publications {
         create<MavenPublication>("maven") {
@@ -59,11 +61,10 @@ publishing {
                     password = pass
                 }
             }
-            val snapshot = project.version.toString().contains("SNAPSHOT", ignoreCase = true)
             maven {
-                name = if (snapshot) "yuriSnapshots" else "yuriReleases"
+                name = if (isSnapshot) "yuriSnapshots" else "yuriReleases"
                 url = uri(
-                    if (snapshot) "https://repo.yuri.capital/repository/maven-snapshots/"
+                    if (isSnapshot) "https://repo.yuri.capital/repository/maven-snapshots/"
                     else "https://repo.yuri.capital/repository/maven-releases/",
                 )
                 credentials {
@@ -77,7 +78,7 @@ publishing {
 
 signing {
     val hasSigning = providers.gradleProperty("signing.keyId").isPresent
-    isRequired = hasSigning && !project.version.toString().contains("SNAPSHOT", ignoreCase = true)
+    isRequired = hasSigning && !isSnapshot
     if (hasSigning) {
         sign(publishing.publications)
     }
