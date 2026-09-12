@@ -12,6 +12,7 @@ export const KEEL_HEADERS = {
   except: "X-Keel-Except",
   theme: "X-Keel-Theme",
   version: "X-Keel-Version",
+  build: "X-Keel-Build",
   partial: "X-Keel-Partial",
 } as const
 
@@ -45,6 +46,8 @@ export interface KeelSeed<T = unknown> {
   theme: KeelThemeRef
   entry: string
   css: string[]
+  /** Content hash of the serving pack; a change forces a full reload. */
+  build?: string
   shared?: Record<string, unknown> | null
   host: string
   layout?: string | null

@@ -66,6 +66,16 @@ class KeelConfig {
     var csrfAllowedOrigins: Set<String> = emptySet()
 
     /**
+     * Dev-time pack hot reload. When enabled, Keel fingerprints file and
+     * directory bundles and swaps in a freshly opened pack when the source
+     * changes. Classpath resource bundles are never watched. Default off.
+     */
+    var watchPacks: Boolean = false
+
+    /** Poll interval for [watchPacks], in milliseconds. */
+    var packWatchIntervalMs: Long = 500
+
+    /**
      * Opt-in CSP for document responses. When set, Keel stamps one nonce
      * per document onto its shell scripts and pack-declared head
      * `<script>`/`<link>` tags, then sends [CspPolicy.header]. Visits stay

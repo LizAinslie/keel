@@ -3,6 +3,7 @@ package dev.kolektiv.keel.bundle
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -117,6 +118,50 @@ class FrontendBundleTest {
             val names = zipEntryNames(bundle.openArchive())
             assertTrue("manifest.json" in names)
             assertTrue(names.none { it.startsWith("/") })
+        }
+    }
+
+    @Test
+    fun `content hash is stable for identical content and changes with content`() {
+        val dir = writePack("harbor")
+        val first = FrontendBundle.fromDirectory(dir).use { it.contentHash }
+        val second = FrontendBundle.fromDirectory(dir).use { it.contentHash }
+        assertEquals(first, second)
+        assertEquals(64, first.length)
+        assertTrue(first.all { it in "0123456789abcdef" })
+
+        dir.resolve("pages/home.js").writeText("export async function mount() { /* v2 */ }")
+        val changed = FrontendBundle.fromDirectory(dir).use { it.contentHash }
+        assertNotEquals(first, changed)
+    }
+
+    @Test
+    fun `zip content hash is stable across reopen and changes with content`() {
+        val dir = writePack("harbor")
+        val zip = temp.resolve("harbor.feb")
+        zipDirectory(dir, zip)
+        val first = FrontendBundle.fromFile(zip).use { it.contentHash }
+        val second = FrontendBundle.fromFile(zip).use { it.contentHash }
+        assertEquals(first, second)
+
+        dir.resolve("pages/home.js").writeText("export async function mount() { /* v2 */ }")
+        val rebuilt = temp.resolve("harbor-v2.feb")
+        zipDirectory(dir, rebuilt)
+        val changed = FrontendBundle.fromFile(rebuilt).use { it.contentHash }
+        assertNotEquals(first, changed)
+    }
+
+    @Test
+    fun `origin reopens the same pack with current content`() {
+        val dir = writePack("harbor")
+        FrontendBundle.fromDirectory(dir).use { bundle ->
+            assertEquals(BundleOrigin.Directory(dir.toAbsolutePath().normalize()), bundle.origin)
+            dir.resolve("pages/home.js").writeText("export async function mount() { /* v2 */ }")
+            FrontendBundle.open(bundle.origin).use { fresh ->
+                assertEquals("harbor", fresh.id)
+                val entry = fresh.openEntry("pages/home.js").use { it.readBytes().decodeToString() }
+                assertTrue(entry.contains("v2"))
+            }
         }
     }
 

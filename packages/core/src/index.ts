@@ -24,6 +24,8 @@ export {
 } from "./types.ts"
 
 export { bootstrap, router, type RouterConfig } from "./router.ts"
+export { isBuildMismatch, KeelBuildMismatchError } from "./router.ts"
+export { clearPrefetch } from "./prefetch.ts"
 export { getPage, getProcessing, peekPage, setPage, subscribe, subscribeProcessing } from "./store.ts"
 export { toContext } from "./context.ts"
 export { on as onRouterEvent } from "./events.ts"

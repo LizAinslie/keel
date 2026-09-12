@@ -92,7 +92,7 @@ export function keelPack(options: KeelPackOptions): Plugin {
             output: {
               entryFileNames: "[name].js",
               chunkFileNames: "chunks/[name]-[hash].js",
-              assetFileNames: "assets/[name][extname]",
+              assetFileNames: "assets/[name]-[hash][extname]",
             },
           },
         },

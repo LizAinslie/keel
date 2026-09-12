@@ -3,7 +3,7 @@ import { toContext } from "./context.ts"
 import { syncCss } from "./css.ts"
 import { emit, on } from "./events.ts"
 import { pushSeed, seedFromHistory } from "./history.ts"
-import { cacheSeed, prefetchSeed, readSeed, warmModule } from "./prefetch.ts"
+import { cacheSeed, clearPrefetch, prefetchSeed, readSeed, warmModule } from "./prefetch.ts"
 import { beginVisit, endVisit, getPage, peekPage, setPage } from "./store.ts"
 import { sendVisit } from "./transport.ts"
 import {
@@ -30,7 +30,37 @@ interface VisitResult {
 let config: RouterConfig = {}
 let mounted: PageModule | null = null
 let currentEntry: string | null = null
+let mountedBuild: string | null = null
 let inflight: AbortController | null = null
+
+/** Thrown when a visit raced a host-side pack swap; the page is reloading. */
+export class KeelBuildMismatchError extends Error {
+  readonly build: string | null
+
+  constructor(build: string | null) {
+    super(`Keel: pack build changed to ${build ?? "unknown"}; reloading`)
+    this.name = "KeelBuildMismatchError"
+    this.build = build
+  }
+}
+
+/**
+ * True when the mounted pack build is known and differs from the build the
+ * server just advertised. Unknown builds on either side never trigger a
+ * reload, so older hosts and first paints are unaffected.
+ */
+export function isBuildMismatch(
+  mountedBuild: string | null | undefined,
+  responseBuild: string | null | undefined,
+): boolean {
+  if (!mountedBuild || !responseBuild) return false
+  return mountedBuild !== responseBuild
+}
+
+function reloadForBuildMismatch(): void {
+  clearPrefetch()
+  if (typeof window !== "undefined") window.location.reload()
+}
 
 function hostEl(seed: KeelSeed): Element {
   if (config.host) return config.host
@@ -104,6 +134,11 @@ async function fetchSeed(href: string, options: VisitOptions, signal: AbortSigna
     signal,
     onProgress: options.onProgress,
   })
+  const build = response.headers.get(KEEL_HEADERS.build)
+  if (isBuildMismatch(mountedBuild, build)) {
+    reloadForBuildMismatch()
+    throw new KeelBuildMismatchError(build)
+  }
   const partialHeader = response.headers.get(KEEL_HEADERS.partial)
   const partial = partialHeader != null ? partialHeader.split(",").map((part) => part.trim()).filter(Boolean) : null
 
@@ -122,7 +157,12 @@ async function applySeed(
   options: VisitOptions,
   replace: boolean,
   meta: { initial?: boolean } = {},
-): Promise<void> {
+): Promise<boolean> {
+  if (isBuildMismatch(mountedBuild, seed.build)) {
+    reloadForBuildMismatch()
+    return false
+  }
+  if (seed.build) mountedBuild = seed.build
   const sameEntry = currentEntry === seed.entry
   const samePage = peekPage()?.page === seed.page
   const preserve = Boolean(options.preserveState) && sameEntry && samePage && mounted?.update
@@ -154,9 +194,10 @@ async function applySeed(
 
   if (options.viewTransition && typeof document !== "undefined" && "startViewTransition" in document) {
     await document.startViewTransition(() => run()).finished.catch(() => undefined)
-    return
+    return true
   }
   await run()
+  return true
 }
 
 async function visit(href: string, options: VisitOptions = {}): Promise<void> {
@@ -189,7 +230,7 @@ async function visit(href: string, options: VisitOptions = {}): Promise<void> {
       await visit(seed.redirect, { ...options, method: "get", data: undefined })
       return
     }
-    await applySeed(seed, options, Boolean(options.replace))
+    if (!(await applySeed(seed, options, Boolean(options.replace)))) return
     if (Object.keys(seed.errors ?? {}).length > 0) {
       options.onError?.(seed.errors)
       emit("error", { errors: seed.errors })
@@ -198,7 +239,7 @@ async function visit(href: string, options: VisitOptions = {}): Promise<void> {
       emit("success", { page: seed })
     }
   } catch (error) {
-    if ((error as Error).name === "AbortError") {
+    if (error instanceof KeelBuildMismatchError || (error as Error).name === "AbortError") {
       visitState.cancelled = true
       options.onCancel?.()
       emit("cancel", { visit: visitState })
@@ -214,23 +255,28 @@ async function visit(href: string, options: VisitOptions = {}): Promise<void> {
 }
 
 async function prefetch(href: string, options: VisitOptions = {}): Promise<void> {
-  emit("prefetching", { href })
-  const url = buildUrl(href, "get", options.data)
-  const isPartial = Boolean(options.only?.length || options.except?.length)
-  if (isPartial) {
-    const result = await fetchSeed(url, { ...options, method: "get" }, new AbortController().signal)
-    await warmModule(result.seed.entry)
-    emit("prefetched", { href, page: result.seed })
-    return
+  try {
+    emit("prefetching", { href })
+    const url = buildUrl(href, "get", options.data)
+    const isPartial = Boolean(options.only?.length || options.except?.length)
+    if (isPartial) {
+      const result = await fetchSeed(url, { ...options, method: "get" }, new AbortController().signal)
+      await warmModule(result.seed.entry)
+      emit("prefetched", { href, page: result.seed })
+      return
+    }
+    const seed = await prefetchSeed(url, async () => {
+      const result = await fetchSeed(url, { ...options, method: "get" }, new AbortController().signal)
+      if (result.partial) return result.seed
+      cacheSeed(url, result.seed)
+      return result.seed
+    })
+    await warmModule(seed.entry)
+    emit("prefetched", { href, page: seed })
+  } catch (error) {
+    if (error instanceof KeelBuildMismatchError) return
+    throw error
   }
-  const seed = await prefetchSeed(url, async () => {
-    const result = await fetchSeed(url, { ...options, method: "get" }, new AbortController().signal)
-    if (result.partial) return result.seed
-    cacheSeed(url, result.seed)
-    return result.seed
-  })
-  await warmModule(seed.entry)
-  emit("prefetched", { href, page: seed })
 }
 
 function cancel(): void {
